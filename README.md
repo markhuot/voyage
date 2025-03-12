@@ -2,12 +2,19 @@
 Seamlessly move data from one source to another.
 
 ```php
+$source = new CsvConnection('data.csv');
+$destination = new WordPressConnection();
+
 (new Voyage)
-    ->from(new CsvConnection('file.csv'))
-    ->to(new WordPressConnection($wpConfig))
-    ->addTransformer(new CategoryTransformer)
-    ->addTransformer(new BlockTransformer)
-    ->start();
+  ->addCollection(new Collection(
+    name: 'Blog',
+    source: $source,
+    destination: $destination,
+    transformers: [
+      new TitleTransformer,
+      new FeaturedImageTransformer,
+    ],
+  ));
 ```
 
 Voyage is an ETL tool that provides a simple but powerful interface to move massive amounts of data as efficiently as
