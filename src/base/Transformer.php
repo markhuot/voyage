@@ -1,9 +1,9 @@
 <?php
 
-namespace markhuot\etl\base;
+namespace markhuot\voyage\base;
 
 use Generator;
-use markhuot\etl\phases\DefaultPhase;
+use markhuot\voyage\phases\DefaultPhase;
 
 abstract class Transformer implements TransformerInterface, DefaultPhase
 {

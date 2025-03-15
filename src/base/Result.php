@@ -1,8 +1,8 @@
 <?php
 
-namespace markhuot\etl\base;
+namespace markhuot\voyage\base;
 
-use markhuot\etl\Voyage;
+use markhuot\voyage\Voyage;
 
 class Result
 {

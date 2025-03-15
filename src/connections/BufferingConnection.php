@@ -1,9 +1,9 @@
 <?php
 
-namespace markhuot\etl\connections;
+namespace markhuot\voyage\connections;
 
-use markhuot\etl\base\DestinationConnectionInterface;
-use markhuot\etl\base\Frame;
+use markhuot\voyage\base\DestinationConnectionInterface;
+use markhuot\voyage\base\Frame;
 
 abstract class BufferingConnection extends Connection implements DestinationConnectionInterface
 {

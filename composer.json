@@ -1,5 +1,5 @@
 {
-    "name": "markhuot/etl",
+    "name": "markhuot/voyage",
     "description": "A simple ETL library for PHP",
     "license": "MIT",
     "type": "library",
@@ -11,7 +11,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "markhuot\\etl\\": "./src"
+            "markhuot\\voyage\\": "./src"
         },
         "files": [
             "src/helpers/exceptions.php"

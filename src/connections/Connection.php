@@ -1,6 +1,6 @@
 <?php
 
-namespace markhuot\etl\connections;
+namespace markhuot\voyage\connections;
 
 abstract class Connection
 {

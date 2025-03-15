@@ -1,6 +1,6 @@
 <?php
 
-namespace markhuot\etl\output;
+namespace markhuot\voyage\output;
 
 interface StreamInterface
 {

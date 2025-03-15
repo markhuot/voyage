@@ -1,11 +1,11 @@
 <?php
 
-namespace markhuot\etl\connections;
+namespace markhuot\voyage\connections;
 
 use Generator;
-use markhuot\etl\base\DestinationConnectionInterface;
-use markhuot\etl\base\SourceConnectionInterface;
-use markhuot\etl\base\Frame;
+use markhuot\voyage\base\DestinationConnectionInterface;
+use markhuot\voyage\base\SourceConnectionInterface;
+use markhuot\voyage\base\Frame;
 
 class ArrayConnection extends Connection implements SourceConnectionInterface, DestinationConnectionInterface
 {

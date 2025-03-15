@@ -1,6 +1,6 @@
 <?php
 
-namespace markhuot\etl\helpers;
+namespace markhuot\voyage\helpers;
 
 
 use RuntimeException;

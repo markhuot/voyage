@@ -1,17 +1,17 @@
 <?php
 
-namespace markhuot\etl;
+namespace markhuot\voyage;
 
-use markhuot\etl\base\AuditorInterface;
-use markhuot\etl\base\DestinationConnectionInterface;
-use markhuot\etl\base\SourceConnectionInterface;
-use markhuot\etl\base\Frame;
-use markhuot\etl\base\TransformerInterface;
-use markhuot\etl\output\PhpStreamWrapper;
-use markhuot\etl\output\StreamInterface;
-use markhuot\etl\phases\DefaultPhase;
+use markhuot\voyage\base\AuditorInterface;
+use markhuot\voyage\base\DestinationConnectionInterface;
+use markhuot\voyage\base\SourceConnectionInterface;
+use markhuot\voyage\base\Frame;
+use markhuot\voyage\base\TransformerInterface;
+use markhuot\voyage\output\PhpStreamWrapper;
+use markhuot\voyage\output\StreamInterface;
+use markhuot\voyage\phases\DefaultPhase;
 use Throwable;
-use function markhuot\etl\helpers\throw_unless;
+use function markhuot\voyage\helpers\throw_unless;
 
 class Voyage
 {

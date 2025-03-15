@@ -1,11 +1,11 @@
 <?php
 
-namespace markhuot\etl\auditors;
+namespace markhuot\voyage\auditors;
 
 use DateTime;
-use markhuot\etl\base\AuditorInterface;
-use markhuot\etl\base\Frame;
-use markhuot\etl\phases\DefaultPhase;
+use markhuot\voyage\base\AuditorInterface;
+use markhuot\voyage\base\Frame;
+use markhuot\voyage\phases\DefaultPhase;
 use PDO;
 use stdClass;
 use Throwable;
