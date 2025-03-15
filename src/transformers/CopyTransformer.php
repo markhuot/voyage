@@ -1,12 +1,17 @@
 <?php
 
-namespace markhuot\etl\transformers;
+namespace markhuot\voyage\transformers;
 
-use markhuot\etl\base\Frame;
-use markhuot\etl\base\Transformer;
+use markhuot\voyage\base\Frame;
+use markhuot\voyage\base\Transformer;
 
 class CopyTransformer extends Transformer
 {
+    public function __construct(
+        protected ?array $mappings=null
+    ) {
+    }
+
     /**
      * @param Frame<mixed> $source
      * @param Frame<mixed> $destination
@@ -14,6 +19,14 @@ class CopyTransformer extends Transformer
      */
     public function transform(Frame $source, Frame $destination): void
     {
-        $destination->data = $source->data;
+        if ($this->mappings === null) {
+            $destination->data = $source->data;
+            return;
+        }
+
+        foreach ($this->mappings as $mapping) {
+            $data = data_get($source->data, $mapping['from']);
+            data_set($destination->data, $mapping['to'], $data);
+        }
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace markhuot\etl\output;
+namespace markhuot\voyage\output;
 
 class PhpStreamWrapper implements StreamInterface
 {
@@ -13,6 +13,15 @@ class PhpStreamWrapper implements StreamInterface
     }
 
     public function info(string $message, string $verbosity='v'): void
+    {
+        if (strlen($verbosity) > $this->verbosity) {
+            return;
+        }
+
+        fwrite(STDOUT, $message . PHP_EOL);
+    }
+
+    public function debug(string $message, string $verbosity='vvv'): void
     {
         if (strlen($verbosity) > $this->verbosity) {
             return;

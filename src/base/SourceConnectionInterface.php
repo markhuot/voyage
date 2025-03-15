@@ -1,13 +1,13 @@
 <?php
 
-namespace markhuot\etl\base;
+namespace markhuot\voyage\base;
 
 use Generator;
 
 interface SourceConnectionInterface extends ConnectionInterface
 {
     /**
-     * @return Generator<array<Frame<mixed>>>
+     * @return Generator<Frame<mixed>>
      */
-    public function walk(): Generator;
+    public function walk(?array $sourceKeys): Generator;
 }

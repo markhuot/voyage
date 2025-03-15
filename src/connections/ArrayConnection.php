@@ -1,11 +1,11 @@
 <?php
 
-namespace markhuot\etl\connections;
+namespace markhuot\voyage\connections;
 
 use Generator;
-use markhuot\etl\base\DestinationConnectionInterface;
-use markhuot\etl\base\SourceConnectionInterface;
-use markhuot\etl\base\Frame;
+use markhuot\voyage\base\DestinationConnectionInterface;
+use markhuot\voyage\base\SourceConnectionInterface;
+use markhuot\voyage\base\Frame;
 
 class ArrayConnection extends Connection implements SourceConnectionInterface, DestinationConnectionInterface
 {
@@ -17,30 +17,23 @@ class ArrayConnection extends Connection implements SourceConnectionInterface, D
     ) {
     }
 
-    /**
-     * @return Generator<array<Frame<mixed>>>
-     */
-    public function walk(): Generator
+    public function walk(?array $sourceKeys): Generator
     {
-        $frames = [];
-
         foreach ($this->array as $index => $data) {
-            $frames[] = new Frame(
+            yield new Frame(
                 $data,
                 sourceKey: $index,
             );
         }
-
-        //$this->trigger('batch', $frames);
-
-        yield $frames;
     }
+
+    public function reconnect(): void { }
 
     /**
      * @param Frame<mixed> $frame
      * @return Frame<mixed>
      */
-    public function prepareFrame(Frame $frame): Frame
+    public function prepare(Frame $frame): Frame
     {
         return (clone $frame)->setData([]);
     }
@@ -48,7 +41,7 @@ class ArrayConnection extends Connection implements SourceConnectionInterface, D
     /**
      * @param Frame<mixed> $frame
      */
-    public function upsertFrame(Frame $frame): void
+    public function upsert(Frame $frame): void
     {
         if ($frame->sourceKey) {
             $this->array[$frame->sourceKey] = $frame->data;

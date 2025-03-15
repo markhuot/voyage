@@ -1,6 +1,6 @@
 <?php
 
-namespace markhuot\etl\phases;
+namespace markhuot\voyage\phases;
 
 interface RelationsPhase
 {

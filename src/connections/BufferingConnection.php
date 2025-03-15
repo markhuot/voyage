@@ -17,7 +17,7 @@ abstract class BufferingConnection extends Connection implements DestinationConn
     /**
      * @param Frame<mixed> $frame
      */
-    public function upsertFrame(Frame $frame): void
+    public function upsert(Frame $frame): void
     {
         $this->frameBuffer[] = $frame;
 

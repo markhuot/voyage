@@ -1,9 +1,9 @@
 <?php
 
-namespace markhuot\etl\base;
+namespace markhuot\voyage\base;
 
 use DateTime;
-use http\Exception\RuntimeException;
+use RuntimeException;
 use markhuot\etl\phases\DefaultPhase;
 use Throwable;
 

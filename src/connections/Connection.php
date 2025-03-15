@@ -1,8 +1,10 @@
 <?php
 
-namespace markhuot\etl\connections;
+namespace markhuot\voyage\connections;
 
-abstract class Connection
+use markhuot\voyage\base\ConnectionInterface;
+
+abstract class Connection implements ConnectionInterface
 {
     /**
      * @var array<string, array<callable>>

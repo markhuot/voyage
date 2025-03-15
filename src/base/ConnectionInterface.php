@@ -1,6 +1,6 @@
 <?php
 
-namespace markhuot\etl\base;
+namespace markhuot\voyage\base;
 
 interface ConnectionInterface
 {
