@@ -3,15 +3,9 @@
 namespace markhuot\voyage\base;
 
 use Generator;
-use markhuot\voyage\phases\DefaultPhase;
 
-abstract class Transformer implements TransformerInterface, DefaultPhase
+abstract class Transformer implements TransformerInterface
 {
-    public function getPhase(): string
-    {
-        return 'default';
-    }
-
     public function canTransform(Frame $frame): bool
     {
         return true;

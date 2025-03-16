@@ -54,14 +54,6 @@ series of meta data to help track progress and errors as the data moves through 
 - `sourceKey` and `destinationKey` keep track of the mapping between source data and destination data. This allows you
   to upsert data multiple times.
 
-### Phases
-
-Voyage ships with a `DefaultPhase` and a
-`RelationsPhase`. The intent of this separation is to avoid circular logic. For example, if you are importing a blog
-you don't want to have to collect a post, with it's authoer, with it's category in one run. That could create a
-circular dependency if the post is related to author one and the author is related back to the post via a "featured"
-field. Instead, it is recommended that you
-
 ### Installation
 
 Install the package via `composer require --dev markhuot/voyage`. Once the library is installed you need to define the

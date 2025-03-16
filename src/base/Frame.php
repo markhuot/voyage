@@ -4,7 +4,6 @@ namespace markhuot\voyage\base;
 
 use DateTime;
 use RuntimeException;
-use markhuot\etl\phases\DefaultPhase;
 use Throwable;
 
 /**
@@ -17,7 +16,6 @@ class Frame
      */
     public function __construct(
         public mixed $data,
-        public string $phase=DefaultPhase::class,
         public string $collection='default',
         public string|int|null $sourceKey=null,
         public string|int|null $destinationKey=null,
@@ -51,7 +49,7 @@ class Frame
     {
         $json = json_encode($this->data);
         if (! $json) {
-            throw new RuntimeException('Could not create json from frame data. Frame ' . $this->phase . ' ' . $this->collection . ' ' . $this->sourceKey);
+            throw new RuntimeException('Could not create json from frame data. Frame ' . $this->collection . ' ' . $this->sourceKey);
         }
 
         return md5($json);
