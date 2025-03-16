@@ -9,7 +9,7 @@ interface TransformerInterface
     /**
      * @param Frame<mixed> $source
      */
-    public function canTransform(Frame $source): bool;
+    public function shouldTransform(Frame $source): bool;
 
     /**
      * @param Frame<mixed> $source

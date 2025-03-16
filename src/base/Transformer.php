@@ -6,7 +6,7 @@ use Generator;
 
 abstract class Transformer implements TransformerInterface
 {
-    public function canTransform(Frame $frame): bool
+    public function shouldTransform(Frame $frame): bool
     {
         return true;
     }

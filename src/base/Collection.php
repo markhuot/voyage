@@ -28,7 +28,7 @@ class Collection
     public function transform(Frame $source, Frame $destination): void
     {
         foreach ($this->transformers as $transformer) {
-            if ($transformer->canTransform($source)) {
+            if ($transformer->shouldTransform($source)) {
                 $transformer->transform($source, $destination);
             }
         }
