@@ -6,7 +6,6 @@ use Generator;
 use markhuot\etl\base\DestinationConnectionInterface;
 use markhuot\etl\base\Frame;
 use markhuot\etl\base\SourceConnectionInterface;
-use markhuot\etl\phases\DefaultPhase;
 
 class CsvConnection implements SourceConnectionInterface, DestinationConnectionInterface
 {
@@ -45,7 +44,7 @@ class CsvConnection implements SourceConnectionInterface, DestinationConnectionI
         if (($handle = fopen($this->filename, "r")) !== FALSE) {
             $row = 0;
             while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                yield new Frame($data, DefaultPhase::class);
+                yield new Frame($data);
             }
             fclose($handle);
         }

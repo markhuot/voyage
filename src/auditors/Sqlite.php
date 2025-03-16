@@ -1,11 +1,10 @@
 <?php
 
-namespace markhuot\etl\auditors;
+namespace markhuot\voyage\auditors;
 
 use DateTime;
-use markhuot\etl\base\AuditorInterface;
-use markhuot\etl\base\Frame;
-use markhuot\etl\phases\DefaultPhase;
+use markhuot\voyage\base\AuditorInterface;
+use markhuot\voyage\base\Frame;
 use PDO;
 use stdClass;
 use Throwable;
@@ -37,8 +36,8 @@ class Sqlite implements AuditorInterface
             ->execute(array_merge(...array_map(fn ($frame) => [$frame->phase, $frame->collection, $frame->sourceKey], $frames)));
 
         // Copy over destination keys from the default phase to any higher phases
-        $this->db()->prepare('UPDATE keys SET destinationKey=(SELECT innerKeys."destinationKey" FROM keys AS innerKeys WHERE innerKeys.phase=? AND innerKeys.collection=keys.collection AND innerKeys.sourceKey=keys.sourceKey) WHERE destinationKey is null AND phase != ?')
-            ->execute([DefaultPhase::class, DefaultPhase::class]);
+        $this->db()->prepare('UPDATE keys SET destinationKey=(SELECT innerKeys."destinationKey" FROM keys AS innerKeys WHERE innerKeys.collection=keys.collection AND innerKeys.sourceKey=keys.sourceKey) WHERE destinationKey is null AND phase != ?')
+            ->execute(['default']);
 
         $keyedFrames = [];
         foreach ($frames as $frame) {
