@@ -184,3 +184,35 @@ The core data object in Voyage is the `Frame`. Connections are responsible for
 1. generating immutable source frames
 2. generating mutable destination frames
 2. transforming source frame data in to destination frame data
+
+## Matrix
+
+Voyage allows you to define a "matrix" to specify how collections may need to run multiple times to correctly migrate all their data. The matrix is a two-dimensional array. The top level should be arbitrary names for each pass, and the second level should be an array of the various passes.
+
+For example, to avoid recursion, you may want to import your content in two phases. This would be represented in the matrix:
+
+```php
+$matrix = ['phase' => ['default', 'relations']];
+```
+
+You could then also add a locale pass like this:
+
+```php
+$matrix = ['phase' => ['default', 'relations'], 'locale' => ['en', 'de']];
+```
+
+This would cause your migration to run on default+en and then default+de before then running on relations+en and relations+de.
+
+### Example of defining and using the matrix property in the Voyage class
+
+To define and use the matrix property in the Voyage class, you can do the following:
+
+```php
+$matrix = ['phase' => ['default', 'relations'], 'locale' => ['en', 'de']];
+
+$voyage = new Voyage(matrix: $matrix);
+
+$voyage->start(['phase' => 'default', 'locale' => 'en'], $collection);
+```
+
+In this example, the matrix property is defined with phases and locales. When calling the start method, you specify the matrix combination you want to run, such as ['phase' => 'default', 'locale' => 'en'].

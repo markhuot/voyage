@@ -35,10 +35,10 @@ class Trip
                 $this->reapChildren();
             }
 
-            $this->fork(function () use ($collection, $source) {
+            $this->fork(function () use ($collection, $source, $matrix) {
                 $collection->getDestination()->reconnect();
                 $destination = $collection->getDestination()->prepare($source);
-                $collection->transform($source, $destination);
+                $collection->transform($source, $destination, $matrix);
                 $collection->getDestination()->upsert($destination);
 
                 return $destination;

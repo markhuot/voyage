@@ -8,7 +8,6 @@ class Collection
         protected ?string $name,
         protected SourceConnectionInterface $source,
         protected DestinationConnectionInterface $destination,
-        protected array $matrix = ['phase' => ['default']],
         protected ?string $handle = null,
         protected array $transformers = [],
     ) {
@@ -25,10 +24,10 @@ class Collection
         return $this->destination;
     }
 
-    public function transform(Frame $source, Frame $destination): void
+    public function transform(Frame $source, Frame $destination, array $matrix): void
     {
         foreach ($this->transformers as $transformer) {
-            if ($transformer->shouldTransform($source)) {
+            if ($transformer->shouldTransform($source, $matrix)) {
                 $transformer->transform($source, $destination);
             }
         }

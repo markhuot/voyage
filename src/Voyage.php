@@ -21,6 +21,7 @@ class Voyage
         protected ?StreamInterface $stream=null,
         protected bool $devMode = false,
         protected int $processes = 10,
+        protected array $matrix = [],
     ) {
         $this->stream ??= new PhpStreamWrapper;
     }
@@ -53,10 +54,10 @@ class Voyage
         return $this;
     }
 
-    public function start(...$args): void {
+    public function start(array $matrixCombination, Collection $collection): void {
         (new Trip(
             concurrency: $this->processes,
             stream: $this->stream,
-        ))->start(...$args);
+        ))->start($collection, $matrixCombination);
     }
 }
