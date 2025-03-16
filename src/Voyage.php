@@ -54,10 +54,10 @@ class Voyage
         return $this;
     }
 
-    public function start(array $matrixCombination, Collection $collection): void {
+    public function start(...$args): void {
         (new Trip(
             concurrency: $this->processes,
             stream: $this->stream,
-        ))->start($collection, $matrixCombination);
+        ))->start(...$args);
     }
 }
