@@ -122,7 +122,9 @@ A destination connection is responsible for taking destination frames and loadin
 The connection must adhere to the `DestinationConnectionInterface` and implement the following methods.
 
 First, the destination must "prepare" a frame for the destination repository. It is passed a source frame but is free
-to return any sort of frame that is useful to the destination. For example if you were importing in to a 
+to return any sort of frame that is useful to the destination.
+
+Be aware that because Voyage implementes `pcntl_fork` to speed up processing frames must be serialized to pass between the parent and child threads. So it is recommended that frame data be simple array data. If you need more complex data objects, for example, a Model class to insert in to the destination it is recommended to creat that object in the destination connection's `upsert` method right before it is upserted to avoid serialization issues.
 
 ```php
 public function prepareFrame(Frame $frame): Frame
