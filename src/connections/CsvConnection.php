@@ -44,7 +44,7 @@ class CsvConnection implements SourceConnectionInterface, DestinationConnectionI
         if (($handle = fopen($this->filename, "r")) !== FALSE) {
             $row = 0;
             while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                yield new Frame($data, 'default');
+                yield new Frame($data);
             }
             fclose($handle);
         }
