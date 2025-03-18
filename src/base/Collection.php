@@ -30,6 +30,11 @@ class Collection
         return $this->handle;
     }
 
+    public function getMatrix(): array
+    {
+        return $this->matrix;
+    }
+
     public function transform(Frame $source, Frame $destination): void
     {
         foreach ($this->transformers as $transformer) {

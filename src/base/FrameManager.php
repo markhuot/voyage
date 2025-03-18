@@ -20,8 +20,23 @@ class FrameManager {
             sourceKey: $sourceKey,
         );
 
-        $this->voyage->getAuditor()?->hydrateFrame($frame);
+        if (! $this->voyage->getAuditor()?->hydrateFrame($frame)) {
+            $parent = $this->voyage->getAuditor()?->fetchFrameData([
+                'collection' => $frame->collection,
+                'matrix' => http_build_query($this->getPrimaryFrame()),
+                'sourceKey' => $frame->sourceKey,
+            ]);
+
+            $frame->destinationKey = $parent[0]['destinationKey'] ?? null;
+        }
 
         return $frame;
+    }
+
+    public function getPrimaryFrame()
+    {
+        return array_map(function ($passes) {
+            return $passes[0];
+        }, $this->collection->getMatrix());
     }
 }

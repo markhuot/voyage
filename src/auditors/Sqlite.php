@@ -19,20 +19,43 @@ class Sqlite implements AuditorInterface
         $this->path ??= __DIR__ . '/../../audit.sqlite';
     }
 
-    public function hydrateFrame(Frame $frame): void
+    public function fetchFrameData(array $condition): array
     {
-        $statement = $this->db()->prepare('SELECT * FROM frames WHERE collection=? AND sourceKey=?');
-        $statement->execute([$frame->collection, $frame->sourceKey]);
+        $whereStatement = implode(' AND ', array_map(function ($key) {
+            return "{$key} = ?";
+        }, array_keys($condition)));
 
-        /** @var stdClass|false $result */
-        $result = $statement->fetch(PDO::FETCH_OBJ);
+        $statement = $this->db()->prepare('SELECT * FROM frames WHERE '.$whereStatement);
+        $statement->execute(array_values($condition));
 
-        if ($result) {
-            $frame->checksum = $result->checksum ?? null;
-            $frame->destinationKey = $result->destinationKey ?? null;
-            $frame->lastError = $result->lastError ? new DateTime($result->lastError) : null;
-            $frame->lastImport = $result->lastImport ? new DateTime($result->lastImport) : null;
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function hydrateFrame(Frame $frame): bool
+    {
+        $condition = [
+            'collection' => $frame->collection,
+            'matrix' => $frame->matrix,
+            'sourceKey' => $frame->sourceKey,
+        ];
+
+        $results = $this->fetchFrameData($condition);
+
+        if (empty($results)) {
+            return false;
         }
+
+        if (count($results) > 1) {
+            throw new \RuntimeException('Multiple frames found for the same condition '.json_encode($condition));
+        }
+
+        $frame->matrix = $results[0]['matrix'] ?? null;
+        $frame->checksum = $results[0]['checksum'] ?? null;
+        $frame->destinationKey = $results[0]['destinationKey'] ?? null;
+        $frame->lastError = $results[0]['lastError'] ? new DateTime($results[0]['lastError']) : null;
+        $frame->lastImport = $results[0]['lastImport'] ? new DateTime($results[0]['lastImport']) : null;
+
+        return true;
     }
 
     public function persistFrame(Frame $frame): void

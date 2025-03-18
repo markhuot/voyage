@@ -28,6 +28,11 @@ class Trip
         array $matrix=[],
         ?array $sourceKeys=null,
     ): void {
+        // Check that the passed $matrix matches all the keys from the collection's matrix
+        foreach ($collection->getMatrix() as $key => $values) {
+            throw_if(! isset($matrix[$key]), "Missing matrix key: {$key}");
+        }
+
         $frameManager = new FrameManager($this->voyage, $collection, $matrix);
         foreach ($collection->getSource()->walk($frameManager, $sourceKeys) as $source) {
             $this->voyage->getStream()?->debug("Processing {$source->sourceKey}...");

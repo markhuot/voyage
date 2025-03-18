@@ -2,9 +2,14 @@
 
 use markhuot\voyage\auditors\Sqlite;
 use markhuot\voyage\base\Collection;
+use markhuot\voyage\base\DestinationConnectionInterface;
 use markhuot\voyage\base\Frame;
+use markhuot\voyage\base\FrameManager;
+use markhuot\voyage\base\SourceConnectionInterface;
 use markhuot\voyage\base\Transformer;
 use markhuot\voyage\connections\ArrayConnection;
+use markhuot\voyage\connections\Connection;
+use markhuot\voyage\connections\DestinationConnection;
 use markhuot\voyage\transformers\CopyTransformer;
 use markhuot\voyage\Voyage;
 
@@ -70,15 +75,23 @@ it('audits frames', function () {
         ->destinationKey->toBe('1');
 });
 
-it('gets parent frame', function () {
+it('stores matrix', function () {
     ($voyage = (new Voyage(
-        auditor: new Sqlite(),
+        auditor: $auditor = new Sqlite(),
     )))
         ->addCollection($blog = new Collection(
             name: 'Blog',
-            source: new ArrayConnection([['id' => 1], ['id' => 2], ['id' => 3], ['id' => 4]]),
-            destination: new ArrayConnection([]),
             matrix: ['phase' => ['alpha', 'beta']],
+            source: new class extends Connection implements SourceConnectionInterface {
+                public function walk(FrameManager $frameManager, ?array $sourceKeys): Generator {
+                    yield $frameManager->firstOrCreate(0);
+                }
+            },
+            destination: new class extends DestinationConnection{
+                public function upsert(Frame $frame): void {
+                    $frame->destinationKey ??= (string)random_int(1, 1000000);
+                }
+            },
             transformers: [
                 new CopyTransformer(),
             ]
@@ -86,10 +99,60 @@ it('gets parent frame', function () {
         ->start($blog, ['phase' => 'alpha'])
         ->start($blog, ['phase' => 'beta']);
 
-    $frame = new Frame(
-        collection: 'blog',
-        sourceKey: '1',
-    );
-    $voyage->getAuditor()->hydrateFrame($frame);
-    expect($frame->matrix)->toBe('phase=alpha');
+    $alpha = $auditor->fetchFrameData([
+        'collection' => 'blog',
+        'matrix' => 'phase=alpha',
+        'sourceKey' => '0',
+    ]);
+    expect($alpha[0])
+        ->matrix->toBe('phase=alpha')
+        ->destinationKey->not->toBeNull();
+
+    $beta = $auditor->fetchFrameData([
+        'collection' => 'blog',
+        'matrix' => 'phase=beta',
+        'sourceKey' => '0',
+    ]);
+    expect($beta[0])
+        ->matrix->toBe('phase=beta')
+        ->destinationKey->toBe($alpha[0]['destinationKey']);
+});
+
+it('supports multiple matrix levels', function () {
+    ($voyage = (new Voyage(
+        auditor: $auditor = new Sqlite(),
+    )))
+        ->addCollection($blog = new Collection(
+            name: 'Blog',
+            matrix: [
+                'phase' => ['alpha', 'beta'],
+                'locale' => ['en', 'de'],
+            ],
+            source: new class extends Connection implements SourceConnectionInterface {
+                public function walk(FrameManager $frameManager, ?array $sourceKeys): Generator {
+                    yield $frameManager->firstOrCreate(0);
+                }
+            },
+            destination: new class extends DestinationConnection{
+                public function upsert(Frame $frame): void {
+                    $frame->destinationKey ??= (string)random_int(1, 1000000);
+                }
+            },
+            transformers: [
+                new CopyTransformer(),
+            ]
+        ))
+        ->start($blog, ['phase' => 'alpha', 'locale' => 'en'])
+        ->start($blog, ['phase' => 'alpha', 'locale' => 'de'])
+        ->start($blog, ['phase' => 'beta', 'locale' => 'en'])
+        ->start($blog, ['phase' => 'beta', 'locale' => 'de']);
+
+    $frames = $auditor->fetchFrameData([
+        'collection' => 'blog',
+    ]);
+    expect($frames)->toHaveCount(4);
+    expect($frames[0])
+        ->destinationKey->toBe($frames[1]['destinationKey'])
+        ->destinationKey->toBe($frames[2]['destinationKey'])
+        ->destinationKey->toBe($frames[3]['destinationKey']);
 })->only();
