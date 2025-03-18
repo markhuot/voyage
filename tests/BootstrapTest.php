@@ -2,7 +2,6 @@
 
 use markhuot\voyage\auditors\Sqlite;
 use markhuot\voyage\base\Collection;
-use markhuot\voyage\base\DestinationConnectionInterface;
 use markhuot\voyage\base\Frame;
 use markhuot\voyage\base\FrameManager;
 use markhuot\voyage\base\SourceConnectionInterface;
@@ -136,6 +135,7 @@ it('supports multiple matrix levels', function () {
             destination: new class extends DestinationConnection{
                 public function upsert(Frame $frame): void {
                     $frame->destinationKey ??= (string)random_int(1, 1000000);
+                    $frame->lastImport = new \DateTime;
                 }
             },
             transformers: [
@@ -155,4 +155,9 @@ it('supports multiple matrix levels', function () {
         ->destinationKey->toBe($frames[1]['destinationKey'])
         ->destinationKey->toBe($frames[2]['destinationKey'])
         ->destinationKey->toBe($frames[3]['destinationKey']);
+
+    expect($frames[0])->lastImport->not->toBeNull();
+    expect($frames[1])->lastImport->not->toBeNull();
+    expect($frames[2])->lastImport->not->toBeNull();
+    expect($frames[3])->lastImport->not->toBeNull();
 })->only();
