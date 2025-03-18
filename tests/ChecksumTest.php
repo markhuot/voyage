@@ -34,5 +34,5 @@ it('stores checksums', function () {
         ->start($blog);
 
     $data = $auditor->fetchFrameData(['collection' => 'blog', 'sourceKey' => 0]);
-    expect($data)->checksum->not->toBeNull();
+    expect($data[0])->checksum->not->toBeNull();
 })->only();
