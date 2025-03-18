@@ -160,4 +160,4 @@ it('supports multiple matrix levels', function () {
     expect($frames[1])->lastImport->not->toBeNull();
     expect($frames[2])->lastImport->not->toBeNull();
     expect($frames[3])->lastImport->not->toBeNull();
-})->only();
+});
