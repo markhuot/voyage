@@ -3,6 +3,8 @@
 namespace markhuot\voyage\base;
 
 use markhuot\voyage\output\StreamInterface;
+use markhuot\voyage\Voyage;
+
 use function markhuot\voyage\helpers\throw_if;
 
 class Trip
@@ -17,9 +19,7 @@ class Trip
     protected array $pipes = [];
 
     public function __construct(
-        protected int $concurrency,
-        protected ?StreamInterface $stream=null,
-        protected bool $devMode=false,
+        protected Voyage $voyage
     ) {
     }
 
@@ -28,10 +28,11 @@ class Trip
         array $matrix=[],
         ?array $sourceKeys=null,
     ): void {
-        foreach ($collection->getSource()->walk($sourceKeys) as $source) {
-            $this->stream?->debug("Processing {$source->sourceKey}...");
+        $frameManager = new FrameManager($this->voyage, $collection, $matrix);
+        foreach ($collection->getSource()->walk($frameManager, $sourceKeys) as $source) {
+            $this->voyage->getStream()?->debug("Processing {$source->sourceKey}...");
 
-            while (count($this->processIds) >= $this->concurrency) {
+            while (count($this->processIds) >= $this->voyage->getConcurrency()) {
                 $this->reapChildren();
             }
 
@@ -40,6 +41,8 @@ class Trip
                 $destination = $collection->getDestination()->prepare($source);
                 $collection->transform($source, $destination);
                 $collection->getDestination()->upsert($destination);
+
+                $this->voyage->getAuditor()?->persistFrame($destination);
 
                 return $destination;
             });
@@ -52,6 +55,11 @@ class Trip
 
     protected function fork(callable $callback): void
     {
+        if ($this->voyage->getConcurrency() === 1 || ! function_exists('pcntl_fork')) {
+            $callback();
+            return;
+        }
+
         $pipe = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
         throw_if(! $pipe, 'Failed to create a socket pair');
 

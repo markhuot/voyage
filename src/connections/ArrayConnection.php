@@ -4,6 +4,7 @@ namespace markhuot\voyage\connections;
 
 use Generator;
 use markhuot\voyage\base\DestinationConnectionInterface;
+use markhuot\voyage\base\Collection;
 use markhuot\voyage\base\SourceConnectionInterface;
 use markhuot\voyage\base\Frame;
 
@@ -17,17 +18,18 @@ class ArrayConnection extends Connection implements SourceConnectionInterface, D
     ) {
     }
 
-    public function walk(?array $sourceKeys): Generator
+    public function walk($frame, ?array $sourceKeys): Generator
     {
         foreach ($this->array as $index => $data) {
-            yield new Frame(
-                $data,
-                sourceKey: $index,
-            );
+            yield $frame->firstOrCreate($index, ['phase' => 'default'])
+                ->setData($data);
         }
     }
 
-    public function reconnect(): void { }
+    public function reconnect(): void
+    {
+        // ...
+    }
 
     /**
      * @param Frame<mixed> $frame

@@ -15,8 +15,9 @@ class Frame
      * @param T $data
      */
     public function __construct(
-        public mixed $data,
+        public mixed $data=null,
         public string $collection='default',
+        public string $matrix='',
         public string|int|null $sourceKey=null,
         public string|int|null $destinationKey=null,
         public string|null $checksum=null,

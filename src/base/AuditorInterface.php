@@ -7,25 +7,7 @@ use Throwable;
 
 interface AuditorInterface
 {
-    /**
-     * @param array<Frame<mixed>> $frames
-     */
-    public function fetchFrames(array $frames): void;
+    public function hydrateFrame(Frame $frame): void;
 
-    /**
-     * @param array<Frame<mixed>> $frames
-     */
-    public function trackFrames(array $frames): void;
-
-    /**
-     * @param array<Frame<mixed>> $frames
-     */
-    public function trackErrorForFrames(array $frames, Throwable $throwable): void;
-
-    /**
-     * @return array<string, array<string, array{0: int, 1: int}>>
-     */
-    public function getImportStats(): array;
-
-    public function getStatusForKey(string $phase, string $collection, string|int $sourceKey): ?stdClass;
+    public function persistFrame(Frame $frame): void;
 }

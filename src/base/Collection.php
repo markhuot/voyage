@@ -8,11 +8,11 @@ class Collection
         protected ?string $name,
         protected SourceConnectionInterface $source,
         protected DestinationConnectionInterface $destination,
-        protected array $matrix = ['phase' => ['default']],
+        protected array $matrix = [],
         protected ?string $handle = null,
         protected array $transformers = [],
     ) {
-        $this->handle = $handle ?? preg_replace('/[^a-z0-9]/', '-', $name);
+        $this->handle = $handle ?? strtolower(preg_replace('/[^a-z0-9]/i', '-', $name));
     }
 
     public function getSource(): SourceConnectionInterface
@@ -23,6 +23,11 @@ class Collection
     public function getDestination(): DestinationConnectionInterface
     {
         return $this->destination;
+    }
+
+    public function getHandle(): string
+    {
+        return $this->handle;
     }
 
     public function transform(Frame $source, Frame $destination): void

@@ -20,7 +20,7 @@ class Voyage
         protected ?AuditorInterface $auditor=null,
         protected ?StreamInterface $stream=null,
         protected bool $devMode = false,
-        protected int $processes = 10,
+        protected int $concurrency = 10,
     ) {
         $this->stream ??= new PhpStreamWrapper;
     }
@@ -30,6 +30,11 @@ class Voyage
         $this->auditor = $auditor;
 
         return $this;
+    }
+
+    public function getAuditor(): ?AuditorInterface
+    {
+        return $this->auditor;
     }
 
     public function devMode(bool $devMode): self
@@ -46,6 +51,23 @@ class Voyage
         return $this;
     }
 
+    public function getStream(): ?StreamInterface
+    {
+        return $this->stream;
+    }
+
+    public function concurrency(int $concurrency): self
+    {
+        $this->concurrency = $concurrency;
+
+        return $this;
+    }
+
+    public function getConcurrency(): int
+    {
+        return $this->concurrency;
+    }
+
     public function addCollection(Collection $collection): self
     {
         $this->collections[] = $collection;
@@ -53,10 +75,9 @@ class Voyage
         return $this;
     }
 
-    public function start(...$args): void {
-        (new Trip(
-            concurrency: $this->processes,
-            stream: $this->stream,
-        ))->start(...$args);
+    public function start(...$args): self {
+        (new Trip($this))->start(...$args);
+
+        return $this;
     }
 }
