@@ -26,6 +26,9 @@ class CopyTransformer extends Transformer
 
         foreach ($this->mappings as $mapping) {
             $data = data_get($source->data, $mapping['from']);
+            foreach ($mapping['fieldTransformers'] ?? []  as $transformer) {
+                $data = (new $transformer)($data);
+            }
             data_set($destination->data, $mapping['to'], $data);
         }
     }
