@@ -8,64 +8,34 @@ use markhuot\voyage\base\SourceConnectionInterface;
 use markhuot\voyage\connections\Connection;
 use markhuot\voyage\connections\DestinationConnection;
 use markhuot\voyage\transformers\CopyTransformer;
-use markhuot\voyage\Voyage;
 
 it('stores checksums', function () {
-    ($voyage = (new Voyage(
-        auditor: $auditor = new Sqlite(),
-    )))
-        ->addCollection($blog = new Collection(
-            name: 'Blog',
-            source: new class extends Connection implements SourceConnectionInterface {
-                public function walk(FrameManager $frameManager, ?array $sourceKeys): Generator {
-                    yield $frameManager->firstOrCreate(0);
-                }
-            },
-            destination: new class extends DestinationConnection{
-                public function upsert(Frame $frame): void {
-                    $frame->destinationKey ??= (string)random_int(1, 1000000);
-                    $frame->lastImport = new \DateTime;
-                }
-            },
-            transformers: [
-                new CopyTransformer(),
-            ]
-        ))
-        ->start($blog);
+    ($voyage = voyage())->start();
 
-    $data = $auditor->fetchFrameData(['collection' => 'blog', 'sourceKey' => 0]);
-    expect($data)->checksum->not->toBeNull();
+    $data = $voyage->getAuditor()->fetchFrameData(['collection' => 'blog', 'sourceKey' => 0]);
+    expect($data[0])->checksum->not->toBeNull();
 })->only();
 
 it('does not process unchanged frames', function () {
-    ($voyage = (new Voyage(
-        auditor: $auditor = new Sqlite(),
-    )))
-        ->addCollection($blog = new Collection(
-            name: 'Blog',
-            source: new class extends Connection implements SourceConnectionInterface {
-                public function walk(FrameManager $frameManager, ?array $sourceKeys): Generator {
-                    yield $frameManager->firstOrCreate(0)->setData(['id' => 1, 'title' => 'First Post']);
-                }
-            },
-            destination: new class extends DestinationConnection{
-                public function upsert(Frame $frame): void {
-                    $frame->destinationKey ??= (string)random_int(1, 1000000);
-                    $frame->lastImport = new \DateTime;
-                }
-            },
-            transformers: [
-                new CopyTransformer(),
-            ]
-        ))
-        ->start($blog);
+    // swap destination with a mock so we can assert how many times it is called
+    $voyage = voyage();
+    $destination = $voyage->getCollections()[0]->getDestination();
+    $mock = Mockery::mock($destination)
+        ->shouldReceive('upsert')
+        ->once()
+        ->getMock();
+    $voyage->getCollections()[0]->setDestination($mock);
+    
+    // run once
+    $voyage->start();
 
-    $initialData = $auditor->fetchFrameData(['collection' => 'blog', 'sourceKey' => 0]);
-    expect($initialData)->checksum->not->toBeNull();
+    $initialData = $voyage->getAuditor()->fetchFrameData(['collection' => 'blog', 'sourceKey' => 0]);
+    expect($initialData[0])->checksum->not->toBeNull();
 
-    $voyage->start($blog);
+    // run a second time
+    $voyage->start();
 
-    $newData = $auditor->fetchFrameData(['collection' => 'blog', 'sourceKey' => 0]);
-    expect($newData)->checksum->toBe($initialData[0]['checksum']);
-    expect($newData)->lastImport->toBe($initialData[0]['lastImport']);
-});
+    $newData = $voyage->getAuditor()->fetchFrameData(['collection' => 'blog', 'sourceKey' => 0]);
+    expect($newData[0])->checksum->toBe($initialData[0]['checksum']);
+    expect($newData[0])->lastImport->toBe($initialData[0]['lastImport']);
+})->only();

@@ -13,6 +13,11 @@ class MemoryStream implements StreamInterface
     {
         $this->messages[] = ['info', $message, $verbosity];
     }
+    
+    public function debug(string $message, string $verbosity = 'vvv'): void
+    {
+        $this->messages[] = ['info', $message, $verbosity];
+    }
 
     public function error(string $message, string $verbosity = 'v'): void
     {

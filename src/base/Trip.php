@@ -24,10 +24,14 @@ class Trip
     }
 
     public function start(
-        Collection $collection,
+        ?Collection $collection=null,
         array $matrix=[],
         ?array $sourceKeys=null,
     ): void {
+        if ($collection === null) {
+            $collection = $this->voyage->getCollections()[0];
+        }
+
         // Check that the passed $matrix matches all the keys from the collection's matrix
         foreach ($collection->getMatrix() as $key => $values) {
             throw_if(! isset($matrix[$key]), "Missing matrix key: {$key}");
@@ -35,7 +39,13 @@ class Trip
 
         $frameManager = new FrameManager($this->voyage, $collection, $matrix);
         foreach ($collection->getSource()->walk($frameManager, $sourceKeys) as $source) {
-            $this->voyage->getStream()?->debug("Processing {$source->sourceKey}...");
+            if ($source->matchesChecksum()) {
+                $this->voyage->getStream()?->debug("Skipping {$source->sourceKey}, no changes since last import...");
+                continue;
+            }
+            else {
+                $this->voyage->getStream()?->debug("Processing {$source->sourceKey}...");
+            }
 
             while (count($this->processIds) >= $this->voyage->getConcurrency()) {
                 $this->reapChildren();

@@ -20,6 +20,13 @@ class Collection
         return $this->source;
     }
 
+    public function setDestination(DestinationConnectionInterface $destination): self
+    {
+        $this->destination = $destination;
+
+        return $this;
+    }
+
     public function getDestination(): DestinationConnectionInterface
     {
         return $this->destination;

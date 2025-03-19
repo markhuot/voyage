@@ -75,6 +75,11 @@ class Voyage
         return $this;
     }
 
+    public function getCollections(): array
+    {
+        return $this->collections;
+    }
+
     public function start(...$args): self {
         (new Trip($this))->start(...$args);
 
