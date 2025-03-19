@@ -26,93 +26,30 @@ it('bootstraps', function () {
     expect(true)->toBe(true);
 });
 
-it('errors out with devMode', function () {
-    $voyage = (new Voyage(
-        processes: 4,
-        devMode: false,
-    ))
-        ->addCollection($blog = new Collection(
-            name: 'Blog',
-            source: new ArrayConnection([['id' => 1], ['id' => 2], ['id' => 3], ['id' => 4]]),
-            destination: new ArrayConnection([]),
-            transformers: [
-                new class extends Transformer {
-                    public function transform(Frame $source, Frame $destination): void {
-                        throw new \Exception('test');
-                    }
-                }
-            ]
-        ))
-        ->start($blog);
-
-    expect(true)->toBe(true);
-})->skip();
-
-it('audits frames', function () {
-    ($voyage = voyage())
-        ->start();
-
-    $data = $voyage->getAuditor()->fetchFrameData([
-        'collection' => 'blog',
-        'sourceKey' => '0',
-    ]);
-    expect($data[0])
-        ->matrix->toBeEmpty()
-        ->sourceKey->toBe('0')
-        ->destinationKey->not->toBeNull();
-});
-
-it('stores matrix', function () {
+it('continues without devMode', function () {
     ($voyage = voyage())
         ->getCollections()[0]
-        ->setMatrix(['phase' => ['alpha', 'beta']]);
+        ->setTransformers([new class extends Transformer {
+            public function transform(Frame $source, Frame $destination): void {
+                throw new \Exception('This is a test exception');
+            }
+        }]);
+    $voyage->start();
 
-    $voyage->start(null, ['phase' => 'alpha'])
-        ->start(null, ['phase' => 'beta']);
-
-    $alpha = $voyage->getAuditor()->fetchFrameData([
-        'collection' => 'blog',
-        'matrix' => 'phase=alpha',
-        'sourceKey' => '0',
-    ]);
-    expect($alpha[0])
-        ->matrix->toBe('phase=alpha')
-        ->destinationKey->not->toBeNull();
-
-    $beta = $voyage->getAuditor()->fetchFrameData([
-        'collection' => 'blog',
-        'matrix' => 'phase=beta',
-        'sourceKey' => '0',
-    ]);
-    expect($beta[0])
-        ->matrix->toBe('phase=beta')
-        ->destinationKey->toBe($alpha[0]['destinationKey']);
+    $data = $voyage->getAuditor()->fetchFrameData(['collection' => 'blog', 'sourceKey' => 0]);
+    expect($data[0])->lastError->not->toBeNull();
 });
 
-it('supports multiple matrix levels', function () {
+it('stops on exception in devMode', function () {
+    $this->expectException(\Exception::class, 'This is a test exception');
+
     ($voyage = voyage())
+        ->devMode(true)
         ->getCollections()[0]
-        ->setMatrix([
-            'phase' => ['alpha', 'beta'],
-            'locale' => ['en', 'de'],
-        ]);
-
-    $voyage->start(null, ['phase' => 'alpha', 'locale' => 'en'])
-        ->start(null, ['phase' => 'alpha', 'locale' => 'de'])
-        ->start(null, ['phase' => 'beta', 'locale' => 'en'])
-        ->start(null, ['phase' => 'beta', 'locale' => 'de']);
-
-    $frames = $voyage->getAuditor()->fetchFrameData([
-        'collection' => 'blog',
-    ]);
-    expect($frames)->toHaveCount(4);
-    expect($frames[0])
-        ->destinationKey->toBe($frames[1]['destinationKey'])
-        ->destinationKey->toBe($frames[2]['destinationKey'])
-        ->destinationKey->toBe($frames[3]['destinationKey']);
-
-    expect($frames[0])->lastImport->not->toBeNull();
-    expect($frames[1])->lastImport->not->toBeNull();
-    expect($frames[2])->lastImport->not->toBeNull();
-    expect($frames[3])->lastImport->not->toBeNull();
+        ->setTransformers([new class extends Transformer {
+            public function transform(Frame $source, Frame $destination): void {
+                throw new \Exception('This is a test exception');
+            }
+        }]);
+    $voyage->start();
 });

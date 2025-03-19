@@ -53,14 +53,26 @@ class Trip
             }
 
             $this->fork(function () use ($collection, $source) {
-                $collection->getDestination()->reconnect();
-                $destination = $collection->getDestination()->prepare($source);
-                $collection->transform($source, $destination);
-                $collection->getDestination()->upsert($destination);
+                try {
+                    $collection->getDestination()->reconnect();
+                    $destination = $collection->getDestination()->prepare($source);
+                    $collection->transform($source, $destination);
+                    $collection->getDestination()->upsert($destination);
 
-                $this->voyage->getAuditor()?->persistFrame($destination);
+                    $this->voyage->getAuditor()?->persistFrame($destination);
+                    
+                    return $destination;
+                }
+                catch (\Throwable $e) {
+                    if ($this->voyage->getDevMode()) {
+                        throw $e;
+                    }
+                    
+                    $this->voyage->getStream()?->error("Error processing {$source->sourceKey}: {$e->getMessage()}");
 
-                return $destination;
+                    $source->lastError = new \DateTime();
+                    $this->voyage->getAuditor()?->persistFrame($source);
+                }
             });
         }
 

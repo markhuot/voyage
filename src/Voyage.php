@@ -44,6 +44,11 @@ class Voyage
         return $this;
     }
 
+    public function getDevMode(): bool
+    {
+        return $this->devMode;
+    }
+
     public function stream(StreamInterface $stream): self
     {
         $this->stream = $stream;

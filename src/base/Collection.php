@@ -55,6 +55,13 @@ class Collection
         return $this->matrix;
     }
 
+    public function setTransformers(array $transformers): self
+    {
+        $this->transformers = $transformers;
+
+        return $this;
+    }
+
     public function transform(Frame $source, Frame $destination): void
     {
         foreach ($this->transformers as $transformer) {
