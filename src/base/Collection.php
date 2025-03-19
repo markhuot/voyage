@@ -15,6 +15,12 @@ class Collection
         $this->handle = $handle ?? strtolower(preg_replace('/[^a-z0-9]/i', '-', $name));
     }
 
+    // get name
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
+
     public function getSource(): SourceConnectionInterface
     {
         return $this->source;
@@ -35,6 +41,13 @@ class Collection
     public function getHandle(): string
     {
         return $this->handle;
+    }
+
+    public function setMatrix(array $matrix): self
+    {
+        $this->matrix = $matrix;
+
+        return $this;
     }
 
     public function getMatrix(): array

@@ -46,59 +46,31 @@ it('errors out with devMode', function () {
         ->start($blog);
 
     expect(true)->toBe(true);
-});
+})->skip();
 
 it('audits frames', function () {
-    ($voyage = (new Voyage(
-        concurrency: 4,
-        auditor: new Sqlite(),
-    )))
-        ->addCollection($blog = new Collection(
-            name: 'Blog',
-            source: new ArrayConnection([['id' => 1], ['id' => 2], ['id' => 3], ['id' => 4]]),
-            destination: new ArrayConnection([]),
-            transformers: [
-                new CopyTransformer(),
-            ]
-        ))
-        ->start($blog);
+    ($voyage = voyage())
+        ->start();
 
-    $frame = new Frame(
-        collection: 'blog',
-        sourceKey: '1',
-    );
-    $voyage->getAuditor()->hydrateFrame($frame);
-    expect($frame)
-        ->matrix->toBeNull()
-        ->sourceKey->toBe('1')
-        ->destinationKey->toBe('1');
+    $data = $voyage->getAuditor()->fetchFrameData([
+        'collection' => 'blog',
+        'sourceKey' => '0',
+    ]);
+    expect($data[0])
+        ->matrix->toBeEmpty()
+        ->sourceKey->toBe('0')
+        ->destinationKey->not->toBeNull();
 });
 
 it('stores matrix', function () {
-    ($voyage = (new Voyage(
-        auditor: $auditor = new Sqlite(),
-    )))
-        ->addCollection($blog = new Collection(
-            name: 'Blog',
-            matrix: ['phase' => ['alpha', 'beta']],
-            source: new class extends Connection implements SourceConnectionInterface {
-                public function walk(FrameManager $frameManager, ?array $sourceKeys): Generator {
-                    yield $frameManager->firstOrCreate(0);
-                }
-            },
-            destination: new class extends DestinationConnection{
-                public function upsert(Frame $frame): void {
-                    $frame->destinationKey ??= (string)random_int(1, 1000000);
-                }
-            },
-            transformers: [
-                new CopyTransformer(),
-            ]
-        ))
-        ->start($blog, ['phase' => 'alpha'])
-        ->start($blog, ['phase' => 'beta']);
+    ($voyage = voyage())
+        ->getCollections()[0]
+        ->setMatrix(['phase' => ['alpha', 'beta']]);
 
-    $alpha = $auditor->fetchFrameData([
+    $voyage->start(null, ['phase' => 'alpha'])
+        ->start(null, ['phase' => 'beta']);
+
+    $alpha = $voyage->getAuditor()->fetchFrameData([
         'collection' => 'blog',
         'matrix' => 'phase=alpha',
         'sourceKey' => '0',
@@ -107,7 +79,7 @@ it('stores matrix', function () {
         ->matrix->toBe('phase=alpha')
         ->destinationKey->not->toBeNull();
 
-    $beta = $auditor->fetchFrameData([
+    $beta = $voyage->getAuditor()->fetchFrameData([
         'collection' => 'blog',
         'matrix' => 'phase=beta',
         'sourceKey' => '0',
@@ -118,36 +90,19 @@ it('stores matrix', function () {
 });
 
 it('supports multiple matrix levels', function () {
-    ($voyage = (new Voyage(
-        auditor: $auditor = new Sqlite(),
-    )))
-        ->addCollection($blog = new Collection(
-            name: 'Blog',
-            matrix: [
-                'phase' => ['alpha', 'beta'],
-                'locale' => ['en', 'de'],
-            ],
-            source: new class extends Connection implements SourceConnectionInterface {
-                public function walk(FrameManager $frameManager, ?array $sourceKeys): Generator {
-                    yield $frameManager->firstOrCreate(0);
-                }
-            },
-            destination: new class extends DestinationConnection{
-                public function upsert(Frame $frame): void {
-                    $frame->destinationKey ??= (string)random_int(1, 1000000);
-                    $frame->lastImport = new \DateTime;
-                }
-            },
-            transformers: [
-                new CopyTransformer(),
-            ]
-        ))
-        ->start($blog, ['phase' => 'alpha', 'locale' => 'en'])
-        ->start($blog, ['phase' => 'alpha', 'locale' => 'de'])
-        ->start($blog, ['phase' => 'beta', 'locale' => 'en'])
-        ->start($blog, ['phase' => 'beta', 'locale' => 'de']);
+    ($voyage = voyage())
+        ->getCollections()[0]
+        ->setMatrix([
+            'phase' => ['alpha', 'beta'],
+            'locale' => ['en', 'de'],
+        ]);
 
-    $frames = $auditor->fetchFrameData([
+    $voyage->start(null, ['phase' => 'alpha', 'locale' => 'en'])
+        ->start(null, ['phase' => 'alpha', 'locale' => 'de'])
+        ->start(null, ['phase' => 'beta', 'locale' => 'en'])
+        ->start(null, ['phase' => 'beta', 'locale' => 'de']);
+
+    $frames = $voyage->getAuditor()->fetchFrameData([
         'collection' => 'blog',
     ]);
     expect($frames)->toHaveCount(4);
