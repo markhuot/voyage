@@ -73,6 +73,13 @@ class Voyage
         return $this->concurrency;
     }
 
+    public function setCollections(array $collections): self
+    {
+        $this->collections = $collections;
+
+        return $this;
+    }
+
     public function addCollection(Collection $collection): self
     {
         $this->collections[] = $collection;
@@ -85,8 +92,15 @@ class Voyage
         return $this->collections;
     }
 
-    public function start(...$args): self {
-        (new Trip($this))->start(...$args);
+    public function start(?Collection $collection=null, ?array $matrix=null, ...$args): self {
+        $collections = $collection ? [$collection] : $this->collections;
+
+        foreach ($collections as $collection) {
+            foreach ($matrix ? [$matrix] : $collection->getMatrixCombinations() as $combo) {
+                //dump($collection->getName(), $combo);
+                (new Trip($this))->start(...[$collection, $combo, ...$args]);
+            }
+        }
 
         return $this;
     }

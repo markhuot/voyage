@@ -66,3 +66,42 @@ it('supports multiple matrix levels', function () {
     expect($frames[2])->lastImport->not->toBeNull();
     expect($frames[3])->lastImport->not->toBeNull();
 });
+
+it('gets matrix combos', function () {
+    $voyage = voyage();
+    $collection = $voyage->getCollections()[0]->setMatrix([
+        'phase' => ['default', 'relations' => 'depends_on=phase=default'],
+        'locale' => ['en', 'de'],
+    ]);
+
+    expect($collection->getMatrixCombinations())->toBe([
+        ['phase' => 'default', 'locale' => 'en'],
+        ['phase' => 'default', 'locale' => 'de'],
+        ['phase' => 'relations', 'locale' => 'en'],
+        ['phase' => 'relations', 'locale' => 'de'],
+    ]);
+});
+
+it('tracks matrix dependencies', function () {
+    $voyage = voyage();
+    $collection = $voyage->getCollections()[0]->setMatrix([
+        'phase' => ['default', 'relations' => 'depends_on=phase=default'],
+        'locale' => ['en', 'de'],
+    ]);
+    $voyage->setCollections([
+        $collection,
+        (clone $collection)->setName('News'),
+    ]);
+    $voyage->start();
+
+    $blogFrames = $voyage->getAuditor()->fetchFrameData([
+        'collection' => 'blog',
+    ]);
+    dd($blogFrames);
+    $newsFrames = $voyage->getAuditor()->fetchFrameData([
+        'collection' => 'news',
+    ]);
+
+    expect($blogFrames)->toHaveCount(4);
+    expect($newsFrames)->toHaveCount(4);
+})->only();

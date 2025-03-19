@@ -14,11 +14,18 @@ class Collection
     ) {
         $this->handle = $handle ?? strtolower(preg_replace('/[^a-z0-9]/i', '-', $name));
     }
-
-    // get name
+    
     public function getName(): ?string
     {
         return $this->name;
+    }
+    
+    public function setName(string $name): self
+    {
+        $this->name = $name;
+        $this->handle = strtolower(preg_replace('/[^a-z0-9]/i', '-', $name));
+
+        return $this;
     }
 
     public function getSource(): SourceConnectionInterface
@@ -38,6 +45,13 @@ class Collection
         return $this->destination;
     }
 
+    public function setHandle(string $handle): self
+    {
+        $this->handle = $handle;
+
+        return $this;
+    }
+    
     public function getHandle(): string
     {
         return $this->handle;
@@ -53,6 +67,22 @@ class Collection
     public function getMatrix(): array
     {
         return $this->matrix;
+    }
+
+    public function getMatrixCombinations(): array
+    {
+        $combinations = [[]];
+        foreach ($this->matrix as $key => $values) {
+            $newCombinations = [];
+            foreach ($combinations as $combination) {
+                foreach ($values as $valueKey => $value) {
+                    $newCombinations[] = array_merge($combination, [$key => is_numeric($valueKey) ? $value : $valueKey]);
+                }
+            }
+            $combinations = $newCombinations;
+        }
+
+        return $combinations;
     }
 
     public function setTransformers(array $transformers): self

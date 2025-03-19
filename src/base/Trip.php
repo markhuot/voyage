@@ -23,14 +23,10 @@ class Trip
     }
 
     public function start(
-        ?Collection $collection=null,
+        Collection $collection,
         array $matrix=[],
         ?array $sourceKeys=null,
     ): void {
-        if ($collection === null) {
-            $collection = $this->voyage->getCollections()[0];
-        }
-
         // Check that the passed $matrix matches all the keys from the collection's matrix
         foreach ($collection->getMatrix() as $key => $values) {
             throw_if(! isset($matrix[$key]), "Missing matrix key: {$key}");
