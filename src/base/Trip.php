@@ -2,7 +2,6 @@
 
 namespace markhuot\voyage\base;
 
-use markhuot\voyage\output\StreamInterface;
 use markhuot\voyage\Voyage;
 
 use function markhuot\voyage\helpers\throw_if;
@@ -33,23 +32,43 @@ class Trip
             throw_if(! isset($matrix[$key]), "Missing matrix key: {$key}");
         }
 
+        $this->voyage->getStream()?->debug('Starting processing collection '.$collection->getName());
+
         $frameManager = new FrameManager($this->voyage, $collection, $matrix);
         foreach ($collection->getSource()->walk($frameManager, $sourceKeys) as $source) {
-            $this->voyage->getStream()?->debug("Processing {$source->sourceKey}...");
+            if ($source->matchesChecksum()) {
+                $this->voyage->getStream()?->debug("Skipping {$source->sourceKey}, no changes since last import...");
+                continue;
+            }
+            else {
+                $this->voyage->getStream()?->debug("Processing {$source->sourceKey}...");
+            }
 
             while (count($this->processIds) >= $this->voyage->getConcurrency()) {
                 $this->reapChildren();
             }
 
             $this->fork(function () use ($collection, $source) {
-                $collection->getDestination()->reconnect();
-                $destination = $collection->getDestination()->prepare($source);
-                $collection->transform($source, $destination);
-                $collection->getDestination()->upsert($destination);
+                try {
+                    $collection->getDestination()->reconnect();
+                    $destination = $collection->getDestination()->prepare($source);
+                    $collection->transform($source, $destination);
+                    $collection->getDestination()->upsert($destination);
 
-                $this->voyage->getAuditor()?->persistFrame($destination);
+                    $this->voyage->getAuditor()?->persistFrame($destination);
+                    
+                    return $destination;
+                }
+                catch (\Throwable $e) {
+                    if ($this->voyage->getDevMode()) {
+                        throw $e;
+                    }
+                    
+                    $this->voyage->getStream()?->error("Error processing {$source->sourceKey}: {$e->getMessage()}");
 
-                return $destination;
+                    $source->lastError = new \DateTime();
+                    $this->voyage->getAuditor()?->persistFrame($source);
+                }
             });
         }
 

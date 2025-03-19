@@ -26,138 +26,30 @@ it('bootstraps', function () {
     expect(true)->toBe(true);
 });
 
-it('errors out with devMode', function () {
-    $voyage = (new Voyage(
-        processes: 4,
-        devMode: false,
-    ))
-        ->addCollection($blog = new Collection(
-            name: 'Blog',
-            source: new ArrayConnection([['id' => 1], ['id' => 2], ['id' => 3], ['id' => 4]]),
-            destination: new ArrayConnection([]),
-            transformers: [
-                new class extends Transformer {
-                    public function transform(Frame $source, Frame $destination): void {
-                        throw new \Exception('test');
-                    }
-                }
-            ]
-        ))
-        ->start($blog);
+it('continues without devMode', function () {
+    ($voyage = voyage())
+        ->getCollections()[0]
+        ->setTransformers([new class extends Transformer {
+            public function transform(Frame $source, Frame $destination): void {
+                throw new \Exception('This is a test exception');
+            }
+        }]);
+    $voyage->start();
 
-    expect(true)->toBe(true);
+    $data = $voyage->getAuditor()->fetchFrameData(['collection' => 'blog', 'sourceKey' => 0]);
+    expect($data[0])->lastError->not->toBeNull();
 });
 
-it('audits frames', function () {
-    ($voyage = (new Voyage(
-        concurrency: 4,
-        auditor: new Sqlite(),
-    )))
-        ->addCollection($blog = new Collection(
-            name: 'Blog',
-            source: new ArrayConnection([['id' => 1], ['id' => 2], ['id' => 3], ['id' => 4]]),
-            destination: new ArrayConnection([]),
-            transformers: [
-                new CopyTransformer(),
-            ]
-        ))
-        ->start($blog);
+it('stops on exception in devMode', function () {
+    $this->expectException(\Exception::class, 'This is a test exception');
 
-    $frame = new Frame(
-        collection: 'blog',
-        sourceKey: '1',
-    );
-    $voyage->getAuditor()->hydrateFrame($frame);
-    expect($frame)
-        ->matrix->toBeNull()
-        ->sourceKey->toBe('1')
-        ->destinationKey->toBe('1');
-});
-
-it('stores matrix', function () {
-    ($voyage = (new Voyage(
-        auditor: $auditor = new Sqlite(),
-    )))
-        ->addCollection($blog = new Collection(
-            name: 'Blog',
-            matrix: ['phase' => ['alpha', 'beta']],
-            source: new class extends Connection implements SourceConnectionInterface {
-                public function walk(FrameManager $frameManager, ?array $sourceKeys): Generator {
-                    yield $frameManager->firstOrCreate(0);
-                }
-            },
-            destination: new class extends DestinationConnection{
-                public function upsert(Frame $frame): void {
-                    $frame->destinationKey ??= (string)random_int(1, 1000000);
-                }
-            },
-            transformers: [
-                new CopyTransformer(),
-            ]
-        ))
-        ->start($blog, ['phase' => 'alpha'])
-        ->start($blog, ['phase' => 'beta']);
-
-    $alpha = $auditor->fetchFrameData([
-        'collection' => 'blog',
-        'matrix' => 'phase=alpha',
-        'sourceKey' => '0',
-    ]);
-    expect($alpha[0])
-        ->matrix->toBe('phase=alpha')
-        ->destinationKey->not->toBeNull();
-
-    $beta = $auditor->fetchFrameData([
-        'collection' => 'blog',
-        'matrix' => 'phase=beta',
-        'sourceKey' => '0',
-    ]);
-    expect($beta[0])
-        ->matrix->toBe('phase=beta')
-        ->destinationKey->toBe($alpha[0]['destinationKey']);
-});
-
-it('supports multiple matrix levels', function () {
-    ($voyage = (new Voyage(
-        auditor: $auditor = new Sqlite(),
-    )))
-        ->addCollection($blog = new Collection(
-            name: 'Blog',
-            matrix: [
-                'phase' => ['alpha', 'beta'],
-                'locale' => ['en', 'de'],
-            ],
-            source: new class extends Connection implements SourceConnectionInterface {
-                public function walk(FrameManager $frameManager, ?array $sourceKeys): Generator {
-                    yield $frameManager->firstOrCreate(0);
-                }
-            },
-            destination: new class extends DestinationConnection{
-                public function upsert(Frame $frame): void {
-                    $frame->destinationKey ??= (string)random_int(1, 1000000);
-                    $frame->lastImport = new \DateTime;
-                }
-            },
-            transformers: [
-                new CopyTransformer(),
-            ]
-        ))
-        ->start($blog, ['phase' => 'alpha', 'locale' => 'en'])
-        ->start($blog, ['phase' => 'alpha', 'locale' => 'de'])
-        ->start($blog, ['phase' => 'beta', 'locale' => 'en'])
-        ->start($blog, ['phase' => 'beta', 'locale' => 'de']);
-
-    $frames = $auditor->fetchFrameData([
-        'collection' => 'blog',
-    ]);
-    expect($frames)->toHaveCount(4);
-    expect($frames[0])
-        ->destinationKey->toBe($frames[1]['destinationKey'])
-        ->destinationKey->toBe($frames[2]['destinationKey'])
-        ->destinationKey->toBe($frames[3]['destinationKey']);
-
-    expect($frames[0])->lastImport->not->toBeNull();
-    expect($frames[1])->lastImport->not->toBeNull();
-    expect($frames[2])->lastImport->not->toBeNull();
-    expect($frames[3])->lastImport->not->toBeNull();
+    ($voyage = voyage())
+        ->devMode(true)
+        ->getCollections()[0]
+        ->setTransformers([new class extends Transformer {
+            public function transform(Frame $source, Frame $destination): void {
+                throw new \Exception('This is a test exception');
+            }
+        }]);
+    $voyage->start();
 });

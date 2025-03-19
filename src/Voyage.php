@@ -15,6 +15,9 @@ use function markhuot\voyage\helpers\throw_unless;
 
 class Voyage
 {
+    /**
+     * @param array<Collection> $collections
+     */
     public function __construct(
         public array $collections=[],
         protected ?AuditorInterface $auditor=null,
@@ -25,7 +28,7 @@ class Voyage
         $this->stream ??= new PhpStreamWrapper;
     }
 
-    public function auditor(AuditorInterface $auditor): Voyage
+    public function auditor(AuditorInterface $auditor): self
     {
         $this->auditor = $auditor;
 
@@ -42,6 +45,11 @@ class Voyage
         $this->devMode = $devMode;
 
         return $this;
+    }
+
+    public function getDevMode(): bool
+    {
+        return $this->devMode;
     }
 
     public function stream(StreamInterface $stream): self
@@ -68,6 +76,16 @@ class Voyage
         return $this->concurrency;
     }
 
+    /**
+     * @param array<Collection> $collections
+     */
+    public function setCollections(array $collections): self
+    {
+        $this->collections = $collections;
+
+        return $this;
+    }
+
     public function addCollection(Collection $collection): self
     {
         $this->collections[] = $collection;
@@ -75,8 +93,29 @@ class Voyage
         return $this;
     }
 
-    public function start(...$args): self {
-        (new Trip($this))->start(...$args);
+    /**
+     * @return array<Collection>
+     */
+    public function getCollections(): array
+    {
+        return $this->collections;
+    }
+
+    /**
+     * @param array<string, mixed> $matrix
+     * @param array<mixed>|null $sourceKeys
+     */
+    public function start(?Collection $collection=null, ?array $matrix=null, ?array $sourceKeys=null): self {
+        /** @var Collection[] $collections */
+        $collections = $collection ? [$collection] : $this->collections;
+
+        foreach ($collections as $collection) {
+            /** @var array<string, mixed>[] $combinations */
+            $combinations = $matrix ? [$matrix] : $collection->getMatrixCombinations();
+            foreach ($combinations as $combo) {
+                (new Trip($this))->start($collection, $combo, $sourceKeys);
+            }
+        }
 
         return $this;
     }

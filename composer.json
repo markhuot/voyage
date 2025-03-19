@@ -21,14 +21,12 @@
         "pestphp/pest": "^3.5",
         "symfony/var-dumper": "^7.2",
         "laravel/pint": "^1.18",
-        "phpstan/phpstan": "^2.0"
+        "phpstan/phpstan": "^2.0",
+        "mockery/mockery": "^1.6"
     },
     "config": {
         "allow-plugins": {
             "pestphp/pest-plugin": true
         }
-    },
-  "require": {
-    "ext-pcntl": "*"
-  }
+    }
 }
