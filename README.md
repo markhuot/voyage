@@ -23,8 +23,8 @@ possible. The core features that allow this include,
 - batching data on extraction and load to allow for eager loading and more efficient memory usage
 - multi-phase processing to avoid circular logic and simplify transformers
 - checksuming data on extraction to avoid no-op transactions on load
-- (coming soon) async transformations allowing for parallel processing of complex data
-- a complete auditing interface to track data flow and avoid repeat work
+- async transformations allowing for parallel processing of complex data
+- a complete auditing/checksum interface to track data flow and avoid repeat work
 
 ## Getting started
 
