@@ -4,8 +4,14 @@ namespace markhuot\voyage\base;
 
 use markhuot\voyage\actions\ParseOrderedMatrixCombinations;
 
+use function markhuot\voyage\helpers\throw_if;
+
 class Collection
 {
+    /**
+     * @param array<string, mixed> $matrix 
+     * @param array<TransformerInterface> $transformers 
+     */
     public function __construct(
         protected ?string $name,
         protected SourceConnectionInterface $source,
@@ -14,7 +20,7 @@ class Collection
         protected ?string $handle = null,
         protected array $transformers = [],
     ) {
-        $this->handle = $handle ?? strtolower(preg_replace('/[^a-z0-9]/i', '-', $name));
+        $this->handle = $handle ?? $this->deriveHandle();
     }
     
     public function getName(): ?string
@@ -25,9 +31,21 @@ class Collection
     public function setName(string $name): self
     {
         $this->name = $name;
-        $this->handle = strtolower(preg_replace('/[^a-z0-9]/i', '-', $name));
+        $this->handle = $this->deriveHandle();
 
         return $this;
+    }
+
+    protected function deriveHandle(): ?string
+    {
+        if (empty($this->name)) {
+            return null;
+        }
+
+        $handle = preg_replace('/[^a-z0-9]/i', '-', $this->name);
+        throw_if(! $handle, 'Invalid handle derived from name: ' . $this->name);
+
+        return strtolower($handle);
     }
 
     public function getSource(): SourceConnectionInterface

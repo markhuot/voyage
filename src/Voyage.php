@@ -15,6 +15,9 @@ use function markhuot\voyage\helpers\throw_unless;
 
 class Voyage
 {
+    /**
+     * @param array<Collection> $collections
+     */
     public function __construct(
         public array $collections=[],
         protected ?AuditorInterface $auditor=null,
@@ -25,7 +28,7 @@ class Voyage
         $this->stream ??= new PhpStreamWrapper;
     }
 
-    public function auditor(AuditorInterface $auditor): Voyage
+    public function auditor(AuditorInterface $auditor): self
     {
         $this->auditor = $auditor;
 
@@ -73,6 +76,9 @@ class Voyage
         return $this->concurrency;
     }
 
+    /**
+     * @param array<Collection> $collections
+     */
     public function setCollections(array $collections): self
     {
         $this->collections = $collections;
@@ -87,17 +93,27 @@ class Voyage
         return $this;
     }
 
+    /**
+     * @return array<Collection>
+     */
     public function getCollections(): array
     {
         return $this->collections;
     }
 
-    public function start(?Collection $collection=null, ?array $matrix=null, ...$args): self {
+    /**
+     * @param array<string, mixed> $matrix
+     * @param array<mixed>|null $sourceKeys
+     */
+    public function start(?Collection $collection=null, ?array $matrix=null, ?array $sourceKeys=null): self {
+        /** @var Collection[] $collections */
         $collections = $collection ? [$collection] : $this->collections;
 
         foreach ($collections as $collection) {
-            foreach ($matrix ? [$matrix] : $collection->getMatrixCombinations() as $combo) {
-                (new Trip($this))->start(...[$collection, $combo, ...$args]);
+            /** @var array<string, mixed>[] $combinations */
+            $combinations = $matrix ? [$matrix] : $collection->getMatrixCombinations();
+            foreach ($combinations as $combo) {
+                (new Trip($this))->start($collection, $combo, $sourceKeys);
             }
         }
 

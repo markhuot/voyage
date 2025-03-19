@@ -19,18 +19,27 @@ class Sqlite implements AuditorInterface
         $this->path ??= __DIR__ . '/../../audit.sqlite';
     }
 
+    /**
+     * @param array<string, mixed> $condition
+     * @return array<array<string, mixed>>
+     */
     public function fetchFrameData(array $condition): array
     {
         $whereStatement = implode(' AND ', array_map(function ($key) {
             return "{$key} = ?";
         }, array_keys($condition)));
 
-        $statement = $this->db()->prepare('SELECT * FROM frames WHERE '.$whereStatement);
+        $statement = $this->db()->prepare('SELECT * FROM frames WHERE ' . $whereStatement);
         $statement->execute(array_values($condition));
 
-        return $statement->fetchAll(PDO::FETCH_ASSOC);
+        // Ensure the return type matches the expected type
+        return (array)$statement->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * @param Frame<mixed> $frame
+     * @return bool
+     */
     public function hydrateFrame(Frame $frame): bool
     {
         $condition = [
@@ -46,18 +55,23 @@ class Sqlite implements AuditorInterface
         }
 
         if (count($results) > 1) {
-            throw new \RuntimeException('Multiple frames found for the same condition '.json_encode($condition));
+            throw new \RuntimeException('Multiple frames found for the same condition ' . json_encode($condition));
         }
 
+        // Ensure proper type access
         $frame->matrix = $results[0]['matrix'] ?? null;
         $frame->checksum = $results[0]['checksum'] ?? null;
         $frame->destinationKey = $results[0]['destinationKey'] ?? null;
-        $frame->lastError = $results[0]['lastError'] ? new DateTime($results[0]['lastError']) : null;
-        $frame->lastImport = $results[0]['lastImport'] ? new DateTime($results[0]['lastImport']) : null;
+        $frame->lastError = isset($results[0]['lastError']) && $results[0]['lastError'] ? new DateTime($results[0]['lastError']) : null;
+        $frame->lastImport = isset($results[0]['lastImport']) && $results[0]['lastImport'] ? new DateTime($results[0]['lastImport']) : null;
 
         return true;
     }
 
+    /**
+     * @param Frame<mixed> $frame
+     * @return void
+     */
     public function persistFrame(Frame $frame): void
     {
         $frame->checksum = $frame->getDerivedChecksum();
