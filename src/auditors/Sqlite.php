@@ -60,6 +60,7 @@ class Sqlite implements AuditorInterface
 
     public function persistFrame(Frame $frame): void
     {
+        $frame->checksum = $frame->getDerivedChecksum(); // P835b, Pe8e6
         $statement = $this->db()->prepare('REPLACE INTO frames (collection, matrix, sourceKey, destinationKey, checksum, lastError, lastImport) VALUES (?, ?, ?, ?, ?, ?, ?)');
         $statement->execute([
             $frame->collection,
