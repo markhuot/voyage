@@ -21,7 +21,7 @@ it('audits frames', function () {
         'sourceKey' => '0',
     ]);
     expect($data[0])
-        ->matrix->toBeEmpty()
+        ->matrix->toBe('phase=default')
         ->sourceKey->toBe('0')
         ->destinationKey->not->toBeNull();
 });

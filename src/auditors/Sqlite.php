@@ -80,6 +80,13 @@ class Sqlite implements AuditorInterface
             return $this->db;
         }
 
+        if ($this->path !== '' && $this->path !== ':memory:') {
+            $directory = dirname($this->path);
+            if (!file_exists($directory)) {
+                mkdir($directory, 0777, true);
+            }
+        }
+
         $conn = new PDO('sqlite:' . $this->path);
         $conn->prepare('CREATE TABLE IF NOT EXISTS frames (
             `collection` varchar(512) NOT NULL DEFAULT \'default\',

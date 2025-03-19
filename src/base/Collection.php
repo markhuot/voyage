@@ -2,13 +2,15 @@
 
 namespace markhuot\voyage\base;
 
+use markhuot\voyage\actions\ParseOrderedMatrixCombinations;
+
 class Collection
 {
     public function __construct(
         protected ?string $name,
         protected SourceConnectionInterface $source,
         protected DestinationConnectionInterface $destination,
-        protected array $matrix = [],
+        protected array $matrix = ['phase' => ['default']],
         protected ?string $handle = null,
         protected array $transformers = [],
     ) {
@@ -69,20 +71,36 @@ class Collection
         return $this->matrix;
     }
 
+    /**
+     * Takes the matrix array and returns an ordered list of combinations to run.
+     * 
+     * For example, given the matrix: [
+     *   'phase' => ['default', 'relations' => 'depends_on:phase=default'],
+     *   'locale' => ['en', 'de']
+     * ]
+     * 
+     * We would expect to process the following combinations (in order):
+     *   - phase=default&locale=en
+     *   - phase=default&locale=de
+     *   - phase=relations&locale=en
+     *   - phase=relations&locale=de
+     */
     public function getMatrixCombinations(): array
     {
-        $combinations = [[]];
-        foreach ($this->matrix as $key => $values) {
-            $newCombinations = [];
-            foreach ($combinations as $combination) {
-                foreach ($values as $valueKey => $value) {
-                    $newCombinations[] = array_merge($combination, [$key => is_numeric($valueKey) ? $value : $valueKey]);
-                }
-            }
-            $combinations = $newCombinations;
-        }
+        return (new ParseOrderedMatrixCombinations())($this->matrix);
 
-        return $combinations;
+        // $combinations = [[]];
+        // foreach ($this->matrix as $key => $values) {
+        //     $newCombinations = [];
+        //     foreach ($combinations as $combination) {
+        //         foreach ($values as $valueKey => $value) {
+        //             $newCombinations[] = array_merge($combination, [$key => is_numeric($valueKey) ? $value : $valueKey]);
+        //         }
+        //     }
+        //     $combinations = $newCombinations;
+        // }
+
+        // return $combinations;
     }
 
     public function setTransformers(array $transformers): self

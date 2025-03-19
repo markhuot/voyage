@@ -18,14 +18,19 @@ it('stores checksums', function () {
 
 it('does not process unchanged frames', function () {
     // swap destination with a mock so we can assert how many times it is called
-    $voyage = voyage();
+    // we need to turn off concurrency for this test because when Voyage calls
+    // pcntl_fork() the child process will copy the $mock variable to the new
+    // scope. That means this mock will never be called because the copy is the
+    // one being called. Turning off concurrency works around that issue by keeping
+    // everything in the same process.
+    $voyage = voyage(concurrency: 1);
     $destination = $voyage->getCollections()[0]->getDestination();
     $mock = Mockery::mock($destination)
         ->shouldReceive('upsert')
         ->once()
         ->getMock();
     $voyage->getCollections()[0]->setDestination($mock);
-    
+
     // run once
     $voyage->start();
 

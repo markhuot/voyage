@@ -81,27 +81,3 @@ it('gets matrix combos', function () {
         ['phase' => 'relations', 'locale' => 'de'],
     ]);
 });
-
-it('tracks matrix dependencies', function () {
-    $voyage = voyage();
-    $collection = $voyage->getCollections()[0]->setMatrix([
-        'phase' => ['default', 'relations' => 'depends_on=phase=default'],
-        'locale' => ['en', 'de'],
-    ]);
-    $voyage->setCollections([
-        $collection,
-        (clone $collection)->setName('News'),
-    ]);
-    $voyage->start();
-
-    $blogFrames = $voyage->getAuditor()->fetchFrameData([
-        'collection' => 'blog',
-    ]);
-    dd($blogFrames);
-    $newsFrames = $voyage->getAuditor()->fetchFrameData([
-        'collection' => 'news',
-    ]);
-
-    expect($blogFrames)->toHaveCount(4);
-    expect($newsFrames)->toHaveCount(4);
-})->only();

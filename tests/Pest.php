@@ -35,9 +35,13 @@ use markhuot\voyage\Voyage;
 use markhuot\voyage\output\MemoryStream;
 use markhuot\voyage\transformers\CopyTransformer;
 
-function voyage() {
-    return (new Voyage())
-        ->auditor(new Sqlite(path: ''))
+function voyage(...$args) {
+    $randonInteger = random_int(1, 1000000);
+    rmtree('audits');
+    mkdir('audits');
+
+    return (new Voyage(...$args))
+        ->auditor(new Sqlite(path: 'audits/audit-' . $randonInteger . '.sqlite'))
         ->stream(new MemoryStream)
         ->addCollection(new Collection(
             name: 'Blog',
@@ -46,7 +50,7 @@ function voyage() {
                     yield $frameManager->firstOrCreate(0);
                 }
             },
-            destination: new class extends DestinationConnection{
+            destination: new class extends DestinationConnection {
                 public function upsert(Frame $frame): void {
                     $frame->destinationKey ??= (string)random_int(1, 1000000);
                     $frame->lastImport = new \DateTime;
@@ -73,7 +77,16 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
-{
-    // ..
+function rmtree(string $dir) {
+
+    $files = array_diff(scandir($dir), array('.','..'));
+ 
+     foreach ($files as $file) {
+ 
+       (is_dir("$dir/$file")) ? rmtree("$dir/$file") : unlink("$dir/$file");
+ 
+     }
+ 
+     return rmdir($dir);
+ 
 }

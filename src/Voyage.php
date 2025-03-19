@@ -97,7 +97,6 @@ class Voyage
 
         foreach ($collections as $collection) {
             foreach ($matrix ? [$matrix] : $collection->getMatrixCombinations() as $combo) {
-                //dump($collection->getName(), $combo);
                 (new Trip($this))->start(...[$collection, $combo, ...$args]);
             }
         }
