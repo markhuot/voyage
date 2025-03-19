@@ -2,7 +2,6 @@
 
 namespace markhuot\voyage\base;
 
-use markhuot\voyage\output\StreamInterface;
 use markhuot\voyage\Voyage;
 
 use function markhuot\voyage\helpers\throw_if;

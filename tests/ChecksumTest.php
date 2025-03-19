@@ -14,7 +14,7 @@ it('stores checksums', function () {
 
     $data = $voyage->getAuditor()->fetchFrameData(['collection' => 'blog', 'sourceKey' => 0]);
     expect($data[0])->checksum->not->toBeNull();
-})->only();
+});
 
 it('does not process unchanged frames', function () {
     // swap destination with a mock so we can assert how many times it is called
@@ -38,4 +38,4 @@ it('does not process unchanged frames', function () {
     $newData = $voyage->getAuditor()->fetchFrameData(['collection' => 'blog', 'sourceKey' => 0]);
     expect($newData[0])->checksum->toBe($initialData[0]['checksum']);
     expect($newData[0])->lastImport->toBe($initialData[0]['lastImport']);
-})->only();
+});
