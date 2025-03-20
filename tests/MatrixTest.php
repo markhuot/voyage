@@ -118,4 +118,4 @@ it('runs multiple collections with a single start', function () {
     $voyage->start();
 
     $mock->shouldHaveReceived('upsert')->times(8);
-})->only();
+});
