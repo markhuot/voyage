@@ -2,6 +2,7 @@
 
 namespace markhuot\voyage;
 
+use markhuot\voyage\actions\ParseOrderedMatrixCombinations;
 use markhuot\voyage\base\AuditorInterface;
 use markhuot\voyage\base\Collection;
 use markhuot\voyage\base\Frame;
@@ -101,22 +102,56 @@ class Voyage
         return $this->collections;
     }
 
-    /**
-     * @param array<string, mixed> $matrix
-     * @param array<mixed>|null $sourceKeys
-     */
-    public function start(?Collection $collection=null, ?array $matrix=null, ?array $sourceKeys=null): self {
-        /** @var Collection[] $collections */
-        $collections = $collection ? [$collection] : $this->collections;
-
-        foreach ($collections as $collection) {
-            /** @var array<string, mixed>[] $combinations */
-            $combinations = $matrix ? [$matrix] : $collection->getMatrixCombinations();
-            foreach ($combinations as $combo) {
-                (new Trip($this))->start($collection, $combo, $sourceKeys);
+    public function getCollectionByHandle(string $handle): ?Collection
+    {
+        foreach ($this->collections as $collection) {
+            if ($collection->getHandle() === $handle) {
+                return $collection;
             }
         }
 
+        return null;
+    }
+
+    /**
+     * @param array<string, mixed> $desiredMatrices
+     * @param array<mixed>|null $sourceKeys
+     */
+    public function start(Collection|array|string|null $desiredCollections=null, ?array $desiredMatrices=null, ?array $sourceKeys=null): self {
+        if (! is_array($desiredCollections)) {
+            $desiredCollections = array_filter([$desiredCollections]);
+        }
+        foreach ($desiredCollections as &$collection) {
+            if (is_string($collection)) {
+                $foundCollection = $this->getCollectionByHandle($collection);
+                throw_if(! $foundCollection, "Collection {$collection} not found");
+
+                $collection = $foundCollection;
+            }
+        }
+
+        $plan = $this->generatePlan($desiredCollections, $desiredMatrices);
+        $this->stream?->debug('Running plan ' . json_encode($plan));
+
+        foreach ($plan as $trip) {
+            (new Trip($this))->start($this->getCollectionByHandle($trip['collection']), $trip['matrix'], $sourceKeys);
+        }
+
         return $this;
+    }
+
+    protected function generatePlan(array $desiredCollections, ?array $desiredMatrices)
+    {
+        $matrixes = [];
+
+        foreach ($this->collections as $collection) {
+            if (count($desiredCollections) && ! in_array($collection->getHandle(), $desiredCollections)) {
+                continue;
+            }
+
+            $matrixes[$collection->getHandle()] = $collection->getMatrix();
+        }
+
+        return (new ParseOrderedMatrixCombinations)($matrixes);
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use markhuot\voyage\actions\ParseOrderedMatrixCombinations;
 use markhuot\voyage\auditors\Sqlite;
 use markhuot\voyage\base\Collection;
 use markhuot\voyage\base\Frame;
@@ -68,16 +69,53 @@ it('supports multiple matrix levels', function () {
 });
 
 it('gets matrix combos', function () {
-    $voyage = voyage();
-    $collection = $voyage->getCollections()[0]->setMatrix([
-        'phase' => ['default', 'relations' => 'depends_on=phase=default'],
-        'locale' => ['en', 'de'],
-    ]);
+    $matrixes = [
+        'blog' => [
+            'phase' => ['default', 'relations' => 'depends_on:phase=default'],
+            'locale' => ['en', 'de'],
+        ],
+        'news' => [
+            'phase' => ['default', 'relations' => 'depends_on:phase=default'],
+            'locale' => ['en', 'de'],
+        ],
+    ];
 
-    expect($collection->getMatrixCombinations())->toBe([
-        ['phase' => 'default', 'locale' => 'en'],
-        ['phase' => 'default', 'locale' => 'de'],
-        ['phase' => 'relations', 'locale' => 'en'],
-        ['phase' => 'relations', 'locale' => 'de'],
+    expect((new ParseOrderedMatrixCombinations)($matrixes))->toBe([
+        ['collection' => 'blog', 'phase' => 'default', 'locale' => 'en'],
+        ['collection' => 'blog', 'phase' => 'default', 'locale' => 'de'],
+        ['collection' => 'news', 'phase' => 'default', 'locale' => 'en'],
+        ['collection' => 'news', 'phase' => 'default', 'locale' => 'de'],
+        ['collection' => 'blog', 'phase' => 'relations', 'depends_on' => ['phase' => 'default'], 'locale' => 'en'],
+        ['collection' => 'blog', 'phase' => 'relations', 'depends_on' => ['phase' => 'default'], 'locale' => 'de'],
+        ['collection' => 'news', 'phase' => 'relations', 'depends_on' => ['phase' => 'default'], 'locale' => 'en'],
+        ['collection' => 'news', 'phase' => 'relations', 'depends_on' => ['phase' => 'default'], 'locale' => 'de'],
     ]);
 });
+
+it('runs multiple collections with a single start', function () {
+    $voyage = voyage(concurrency: 1);
+
+    $blog = $voyage->getCollectionByHandle('blog');
+    $blog->setMatrix([
+        'phase' => ['default', 'relations' => 'depends_on:phase=default'],
+        'locale' => ['en', 'de'],
+    ]);
+    $destination = $blog->getDestination();
+    $mock = Mockery::mock($destination)
+        ->shouldReceive('upsert')->ordered()->withArgs(fn ($frame) => $frame->collection === 'blog' && $frame->matrix === 'phase=default&locale=en')->getMock()
+        ->shouldReceive('upsert')->ordered()->withArgs(fn ($frame) => $frame->collection === 'blog' && $frame->matrix === 'phase=default&locale=de')->getMock()
+        ->shouldReceive('upsert')->ordered()->withArgs(fn ($frame) => $frame->collection === 'news' && $frame->matrix === 'phase=default&locale=en')->getMock()
+        ->shouldReceive('upsert')->ordered()->withArgs(fn ($frame) => $frame->collection === 'news' && $frame->matrix === 'phase=default&locale=de')->getMock()
+        ->shouldReceive('upsert')->ordered()->withArgs(fn ($frame) => $frame->collection === 'blog' && $frame->matrix === 'phase=relations&locale=en')->getMock()
+        ->shouldReceive('upsert')->ordered()->withArgs(fn ($frame) => $frame->collection === 'blog' && $frame->matrix === 'phase=relations&locale=de')->getMock()
+        ->shouldReceive('upsert')->ordered()->withArgs(fn ($frame) => $frame->collection === 'news' && $frame->matrix === 'phase=relations&locale=en')->getMock()
+        ->shouldReceive('upsert')->ordered()->withArgs(fn ($frame) => $frame->collection === 'news' && $frame->matrix === 'phase=relations&locale=de')->getMock();
+    $blog->setDestination($mock);
+    
+    $news = (clone $blog)->setName('News');
+    $voyage->addCollection($news);
+
+    $voyage->start();
+
+    $mock->shouldHaveReceived('upsert')->times(8);
+})->only();

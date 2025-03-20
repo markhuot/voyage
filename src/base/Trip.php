@@ -32,7 +32,7 @@ class Trip
             throw_if(! isset($matrix[$key]), "Missing matrix key: {$key}");
         }
 
-        $this->voyage->getStream()?->debug('Starting processing collection '.$collection->getName());
+        $this->voyage->getStream()?->debug('Starting processing collection '.$collection->getName() . ' with matrix ' . http_build_query($matrix));
 
         $frameManager = new FrameManager($this->voyage, $collection, $matrix);
         foreach ($collection->getSource()->walk($frameManager, $sourceKeys) as $source) {

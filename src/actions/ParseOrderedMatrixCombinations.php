@@ -6,115 +6,87 @@ class ParseOrderedMatrixCombinations
 {
     /**
      * @param array<string, mixed> $matrix
-     * @return array<array<string, string|null>>
+     * @return array<array-key, array{collection: string, matrix: array<string, string>}>
      */
-    public function __invoke(array $matrix): array
+    public function __invoke(array $matrixes): array
     {
-        $normalized = $this->normalizeMatrix($matrix);
-        $sortedKeys = $this->sortByDependencies($normalized);
+        $denormalized = $this->denormalize($matrixes);
 
-        return $this->generatePairs($sortedKeys, $normalized);
+        return $denormalized;
     }
 
-    /**
-     * @param array<string, mixed> $matrix
-     * @return array<string, array<string, string|null>>
-     */
-    protected function normalizeMatrix(array $matrix): array {
-        /** @var array<string, array<string, string|null>> $normalized */
-        $normalized = [];
-    
-        foreach ($matrix as $key => $values) {
-            if (!is_array($values)) {
-                $values = [$values]; // Ensure array format
-            }
-    
-            foreach ($values as $subKey => $value) {
-                if (is_string($subKey)) {
-                    // Handle 'key => value' case (e.g., 'relations' => 'depends_on:phase=default')
-                    if (is_string($value) || is_null($value)) {
-                        $normalized[$key][$subKey] = $value;
-                    } else {
-                        $normalized[$key][$subKey] = null;
+    protected function denormalize($matrix) {
+        $denormalized = [];
+
+        foreach ($matrix as $collection => $config) {
+            $combinations = [
+                ['collection' => $collection]
+            ];
+
+            foreach ($config as $key => $values) {
+                if (is_array($values)) {
+                    $newCombinations = [];
+                    foreach ($combinations as $combination) {
+                        foreach ($values as $valueKey => $value) {
+                            $newCombination = $combination;
+                            $newCombination['matrix'][$key] = $valueKey;
+                            if (is_array($value) && isset($value['depends_on'])) {
+                                $newCombination['depends_on'] = $value['depends_on'];
+                            } elseif (is_string($value) && strpos($value, 'depends_on:') === 0) {
+                                $dependsOnString = substr($value, strlen('depends_on:'));
+                                $parts = explode('=', $dependsOnString);
+                                if (count($parts) === 2) {
+                                    $newCombination['depends_on'] = [$parts[0] => $parts[1]];
+                                }
+                            }
+                            $newCombinations[] = $newCombination;
+                        }
                     }
-                } else {
-                    // Handle regular indexed arrays (e.g., 'phase' => ['default', ...])
-                    if (is_string($value) || is_numeric($value)) {
-                        $normalized[$key][(string)$value] = null;
-                    } else {
-                        $normalized[$key]['invalid'] = null;
-                    }
+                    $combinations = $newCombinations;
                 }
             }
+            $denormalized = array_merge($denormalized, $combinations);
         }
-    
-        return $normalized;
-    }
 
-    /**
-     * @param array<string, array<string, string|null>> $items
-     * @return array<string>
-     */
-    protected function sortByDependencies(array $items): array {
-        /** @var array<string> $sorted */
-        $sorted = [];
-        /** @var array<string, bool> $visited */
-        $visited = [];
-    
-        /**
-         * @param array<string, string|null> $item
-         * @param string $key
-         */
-        $visit = function (array $item, string $key) use (&$sorted, &$visited, &$items, &$visit) {
-            if (isset($visited[$key])) {
-                return; // Already processed
+        usort($denormalized, function ($a, $b) {
+            $aHasDepends = isset($a['depends_on']);
+            $bHasDepends = isset($b['depends_on']);
+
+            if (!$aHasDepends && !$bHasDepends) {
+                return 0;
             }
-            $visited[$key] = true;
-    
-            if (isset($items[$key])) {
-                foreach ($items[$key] as $subKey => $dependency) {
-                    if (is_string($dependency) && str_starts_with($dependency, 'depends_on:')) {
-                        preg_match('/depends_on:(\w+)=(\w+)/', $dependency, $matches);
-                        if ($matches) {
-                            [, $depKey, $depValue] = $matches;
-                            if (isset($items[$depKey][$depValue])) {
-                                $visit($items[$depKey], $depValue);
-                            }
+
+            if (!$aHasDepends && $bHasDepends) {
+                return -1;
+            }
+
+            if ($aHasDepends && !$bHasDepends) {
+                return 1;
+            }
+
+            if ($aHasDepends && $bHasDepends) {
+                $aDependsOn = $a['depends_on'];
+                $bDependsOn = $b['depends_on'];
+
+                foreach ($aDependsOn as $depKeyA => $depValA) {
+                    if (isset($a['matrix'][$depKeyA])) {
+                        foreach($bDependsOn as $depKeyB => $depValB){
+                           if(isset($b['matrix'][$depKeyB])){
+                                if($a['matrix'][$depKeyA] === $depValB){
+                                    return 1;
+                                }
+                                if($b['matrix'][$depKeyB] === $depValA){
+                                    return -1;
+                                }
+                           }
                         }
                     }
                 }
             }
-    
-            $sorted[] = $key;
-        };
-    
-        foreach ($items as $key => $values) {
-            $visit($values, $key);
-        }
-    
-        return $sorted;
-    }
 
-    /**
-     * @param array<string> $sortedKeys
-     * @param array<string, array<string, string|null>> $matrix
-     * @return array<array<string, string>>
-     */
-    protected function generatePairs(array $sortedKeys, array $matrix): array {
-        /** @var array<array<string, string>> $combinations */
-        $combinations = [[]];
-    
-        foreach ($sortedKeys as $key) {
-            /** @var array<array<string, string>> $newCombinations */
-            $newCombinations = [];
-            foreach ($combinations as $combo) {
-                foreach (array_keys($matrix[$key]) as $value) {
-                    $newCombinations[] = array_merge($combo, [$key => $value]);
-                }
-            }
-            $combinations = $newCombinations;
-        }
-    
-        return $combinations;
+            return 0;
+        });
+
+        return $denormalized;
     }
 }

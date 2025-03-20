@@ -84,41 +84,52 @@ class Collection
         return $this;
     }
 
+    /**
+     * Normalize our collection to a standard format regardless of input. This will take the
+     * shorthand format of,
+     * 
+     * ```php
+     * [
+     *     'phase' => ['default', 'relations' => 'depends_on:phase=default'],
+     *     'locale' => ['en', 'de'],
+     * ]
+     * ```
+     * 
+     * And convert it to,
+     * 
+     * ```php
+     * [
+     *     'phase' => ['default' => null, 'relations' => ['depends_on' => ['phase' => 'default']]],
+     *     'country' => ['en' => null, 'de' => null],
+     * ]
+     * ```
+     */
     public function getMatrix(): array
     {
-        return $this->matrix;
+        $normalized = [];
+
+        foreach ($this->matrix as $key => $values) {
+            if (!is_array($values)) {
+                $values = [$values];
+            }
+
+            foreach ($values as $subKey => $value) {
+                if (is_string($subKey)) {
+                    $normalized[$key][$subKey] = $this->parseDependencyString($value);
+                } else {
+                    $normalized[$key][$value] = null;
+                }
+            }
+        }
+        return $normalized;
     }
 
-    /**
-     * Takes the matrix array and returns an ordered list of combinations to run.
-     * 
-     * For example, given the matrix: [
-     *   'phase' => ['default', 'relations' => 'depends_on:phase=default'],
-     *   'locale' => ['en', 'de']
-     * ]
-     * 
-     * We would expect to process the following combinations (in order):
-     *   - phase=default&locale=en
-     *   - phase=default&locale=de
-     *   - phase=relations&locale=en
-     *   - phase=relations&locale=de
-     */
-    public function getMatrixCombinations(): array
+    protected function parseDependencyString(string $dependency): array
     {
-        return (new ParseOrderedMatrixCombinations())($this->matrix);
+        [$key, $dependency] = explode(':', $dependency);
+        [$dependencyKey, $dependencyValue] = explode('=', $dependency);
 
-        // $combinations = [[]];
-        // foreach ($this->matrix as $key => $values) {
-        //     $newCombinations = [];
-        //     foreach ($combinations as $combination) {
-        //         foreach ($values as $valueKey => $value) {
-        //             $newCombinations[] = array_merge($combination, [$key => is_numeric($valueKey) ? $value : $valueKey]);
-        //         }
-        //     }
-        //     $combinations = $newCombinations;
-        // }
-
-        // return $combinations;
+        return [$key => [$dependencyKey => $dependencyValue]];
     }
 
     public function setTransformers(array $transformers): self
