@@ -24,6 +24,7 @@ class Frame
         public Throwable|null $exception=null,
         public DateTime|null $lastError=null,
         public DateTime|null $lastImport=null,
+        protected int $schemaVersion=1
     ) {
     }
 
@@ -53,6 +54,6 @@ class Frame
             throw new RuntimeException('Could not create json from frame data. Frame ' . $this->collection . ' ' . $this->sourceKey);
         }
 
-        return md5($json);
+        return md5($json . $this->schemaVersion);
     }
 }

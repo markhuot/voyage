@@ -18,6 +18,7 @@ class FrameManager {
             collection: $this->collection->getHandle(),
             matrix: http_build_query($this->matrix),
             sourceKey: $sourceKey,
+            schemaVersion: $this->collection->getSchemaVersion()
         );
 
         if (! $this->voyage->getAuditor()?->hydrateFrame($frame)) {
