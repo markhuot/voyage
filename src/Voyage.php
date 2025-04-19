@@ -117,16 +117,14 @@ class Voyage
      * @param array<string, mixed> $desiredMatrices
      * @param array<mixed>|null $sourceKeys
      */
-    public function start(Collection|array|string|null $desiredCollections=null, ?array $desiredMatrices=null, ?array $sourceKeys=null): self {
+    public function start(Collection|array|string|null $desiredCollections=null, ?array $desiredMatrices=null, ?array $sourceKeys=null, bool $force=false, bool $audit=false): self {
         if (! is_array($desiredCollections)) {
             $desiredCollections = array_filter([$desiredCollections]);
         }
-        foreach ($desiredCollections as &$collection) {
+        foreach ($desiredCollections as $collection) {
             if (is_string($collection)) {
                 $foundCollection = $this->getCollectionByHandle($collection);
                 throw_if(! $foundCollection, "Collection {$collection} not found");
-
-                $collection = $foundCollection;
             }
         }
 
@@ -134,7 +132,7 @@ class Voyage
         $this->stream?->debug('Running plan ' . json_encode($plan));
 
         foreach ($plan as $trip) {
-            (new Trip($this))->start($this->getCollectionByHandle($trip['collection']), $trip['matrix'], $sourceKeys);
+            (new Trip($this))->start($this->getCollectionByHandle($trip['collection']), $trip['matrix'], $sourceKeys, $force, $audit);
         }
 
         return $this;

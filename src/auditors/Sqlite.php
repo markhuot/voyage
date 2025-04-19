@@ -36,6 +36,33 @@ class Sqlite implements AuditorInterface
         return (array)$statement->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function fetchFrameCount(array $condition): int
+    {
+        $wheres = [];
+        $params = [];
+
+        foreach ($condition as $key => $value) {
+            if ($value === null) {
+                $wheres[] = "{$key} is null";
+            }
+            elseif ($value === ':notnull:') {
+                $wheres[] = "{$key} is not null";
+            }
+            else {
+                $wheres[] = "{$key} = ?";
+                $params[] = $value;
+            }
+        }
+
+        $whereStatement = implode(' AND ', $wheres);
+
+        $statement = $this->db()->prepare('SELECT count(*) as count FROM frames WHERE ' . $whereStatement);
+        $statement->execute(array_values($params));
+
+        // Ensure the return type matches the expected type
+        return $statement->fetchObject()->count;
+    }
+
     /**
      * @param Frame<mixed> $frame
      * @return bool
@@ -74,8 +101,6 @@ class Sqlite implements AuditorInterface
      */
     public function persistFrame(Frame $frame): void
     {
-        $frame->checksum = $frame->getDerivedChecksum();
-        
         $statement = $this->db()->prepare('REPLACE INTO frames (collection, matrix, sourceKey, destinationKey, checksum, lastError, lastImport) VALUES (?, ?, ?, ?, ?, ?, ?)');
         $statement->execute([
             $frame->collection,

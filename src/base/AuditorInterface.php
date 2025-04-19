@@ -14,6 +14,11 @@ interface AuditorInterface
     public function fetchFrameData(array $condition): ?array;
 
     /**
+     * @param array<string, mixed> $condition
+     */
+    public function fetchFrameCount(array $condition): int;
+
+    /**
      * @param Frame<mixed> $frame 
      */
     public function hydrateFrame(Frame $frame): bool;

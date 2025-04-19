@@ -17,30 +17,38 @@ class Trip
     /** @var array<int, Resource> */
     protected array $pipes = [];
 
-    public function __construct(
-        protected Voyage $voyage
-    ) {
-    }
+    public function __construct(protected Voyage $voyage) {}
 
     public function start(
         Collection $collection,
         array $matrix=[],
         ?array $sourceKeys=null,
+        bool $force=false,
+        bool $audit=false,
     ): void {
         // Check that the passed $matrix matches all the keys from the collection's matrix
         foreach ($collection->getMatrix() as $key => $values) {
-            throw_if(! isset($matrix[$key]), "Missing matrix key: {$key}");
+            throw_if(!isset($matrix[$key]), "Missing matrix key: {$key}");
         }
 
-        $this->voyage->getStream()?->debug('Starting processing collection '.$collection->getName() . ' with matrix ' . http_build_query($matrix));
+        $this->voyage->getStream()?->debug(
+        'Starting processing collection ' .
+            $collection->getName() .
+            ' with matrix ' .
+            http_build_query($matrix),
+        );
 
         $frameManager = new FrameManager($this->voyage, $collection, $matrix);
         foreach ($collection->getSource()->walk($frameManager, $sourceKeys) as $source) {
-            if ($source->matchesChecksum()) {
-                $this->voyage->getStream()?->debug("Skipping {$source->sourceKey}, no changes since last import...");
+            if ($audit) {
+                $this->voyage->getAuditor()?->persistFrame($source);
                 continue;
             }
-            else {
+
+            if (! $force && $source->matchesChecksum() && $source->lastImport !== null) {
+                $this->voyage->getStream()?->debug("Skipping {$source->sourceKey}, no changes since last import...");
+                continue;
+            } else {
                 $this->voyage->getStream()?->debug("Processing {$source->sourceKey}...");
             }
 
@@ -48,31 +56,37 @@ class Trip
                 $this->reapChildren();
             }
 
-            $this->fork(function () use ($collection, $source) {
+            $this->fork(function () use ($collection, $source, $matrix) {
                 try {
                     $collection->getDestination()->reconnect();
                     $destination = $collection->getDestination()->prepare($source);
-                    $collection->transform($source, $destination);
-                    $collection->getDestination()->upsert($destination);
+                    $collection->transform($source, $destination, $matrix);
+                    $collection->getDestination()->upsert($destination, $collection, $this->voyage);
 
+                    $destination->lastError = null;
+                    $destination->lastImport = new \DateTime();
+
+                    // Store the checksum from the source so when we re-pull the source we can
+                    // check if it's changed. We can't use the `$destination->getDerivedChecksum()`
+                    // because that will include any transformers and we don't want to have to
+                    // re-run transformers to see if the source data has changed
+                    $destination->checksum = $source->getDerivedChecksum();
                     $this->voyage->getAuditor()?->persistFrame($destination);
-                    
-                    return $destination;
-                }
-                catch (\Throwable $e) {
-                    if ($this->voyage->getDevMode()) {
-                        throw $e;
-                    }
-                    
+                } catch (\Throwable $e) {
                     $this->voyage->getStream()?->error("Error processing {$source->sourceKey}: {$e->getMessage()}");
 
                     $source->lastError = new \DateTime();
+                    $source->checksum = null;
                     $this->voyage->getAuditor()?->persistFrame($source);
+
+                    if ($this->voyage->getDevMode()) {
+                        throw $e;
+                    }
                 }
             });
         }
 
-        while (! empty($this->processIds)) {
+        while (!empty($this->processIds)) {
             $this->reapChildren();
         }
     }
@@ -84,36 +98,38 @@ class Trip
             return;
         }
 
-        $pipe = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
-        throw_if(! $pipe, 'Failed to create a socket pair');
+//        $pipe = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+//        throw_if(!$pipe, 'Failed to create a socket pair');
 
         $pid = pcntl_fork();
         throw_if($pid == -1, 'Could not fork');
 
         if ($pid === 0) {
             // Child process
-            fclose($pipe[0]); // Close parent end
+//            fclose($pipe[0]); // Close parent end
             try {
                 $result = $callback();
-                fwrite($pipe[1], serialize($result)); // Send result to parent
-                fclose($pipe[1]); // Close child end
+//                fwrite($pipe[1], serialize($result)); // Send result to parent
+//                fclose($pipe[1]); // Close child end
                 exit(0);
-            }
-            catch (\Throwable $e) {
-                fwrite($pipe[1], serialize([
-                    'class' => get_class($e),
-                    'message' => $e->getMessage(),
-                    'code' => $e->getCode(),
-                    'trace' => $e->getTraceAsString(),
-                ]));
-                fclose($pipe[1]);
+            } catch (\Throwable $e) {
+//                fwrite(
+//                    $pipe[1],
+//                    serialize([
+//                        'class' => get_class($e),
+//                        'message' => $e->getMessage(),
+//                        'code' => $e->getCode(),
+//                        'trace' => $e->getTraceAsString(),
+//                    ]),
+//                );
+//                fclose($pipe[1]);
                 posix_kill(posix_getpid(), SIGUSR1);
             }
         } else {
             // Parent process
-            fclose($pipe[1]); // Close child end
+//            fclose($pipe[1]); // Close child end
             $this->processIds[$pid] = $pid;
-            $this->pipes[$pid] = $pipe[0]; // Store parent end for reading
+//            $this->pipes[$pid] = $pipe[0]; // Store parent end for reading
         }
     }
 
@@ -123,11 +139,11 @@ class Trip
             $status = 0;
             $result = pcntl_waitpid($pid, $status, WNOHANG);
             if ($result > 0) {
-                $this->collectResult($pid);
+                //$this->collectResult($pid);
                 unset($this->processIds[$pid]);
-                if (! pcntl_wifexited($status)) {
-                    $error = $this->results[$pid];
-                    throw new \RuntimeException($error['class'].' '.$error['message'], $error['code']);
+                if (!pcntl_wifexited($status)) {
+                    //$error = $this->results[$pid];
+                    //throw new \RuntimeException($error['class'] . ' ' . $error['message'], $error['code']);
                 }
             }
         }

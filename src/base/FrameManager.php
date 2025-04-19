@@ -36,7 +36,7 @@ class FrameManager {
     public function getPrimaryFrame()
     {
         return array_map(function ($passes) {
-            return $passes[0];
+            return array_keys($passes)[0];
         }, $this->collection->getMatrix());
     }
 }

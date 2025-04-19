@@ -3,6 +3,7 @@
 namespace markhuot\voyage\base;
 
 use Generator;
+use markhuot\voyage\Voyage;
 
 interface DestinationConnectionInterface extends ConnectionInterface
 {
@@ -22,7 +23,7 @@ interface DestinationConnectionInterface extends ConnectionInterface
      *
      * @param Frame<mixed> $frame
      */
-    public function upsert(Frame $frame): void;
+    public function upsert(Frame $frame, Collection $collection, Voyage $voyage): void;
 
     public function close(): void;
 }

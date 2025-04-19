@@ -2,8 +2,6 @@
 
 namespace markhuot\voyage\base;
 
-use markhuot\voyage\actions\ParseOrderedMatrixCombinations;
-
 use function markhuot\voyage\helpers\throw_if;
 
 class Collection
@@ -139,11 +137,19 @@ class Collection
         return $this;
     }
 
-    public function transform(Frame $source, Frame $destination): void
+    /**
+     * @return \Illuminate\Support\Collection<Transformer>
+     */
+    public function getTransformers(): \Illuminate\Support\Collection
+    {
+        return collect($this->transformers);
+    }
+
+    public function transform(Frame $source, Frame $destination, array $matrix): void
     {
         foreach ($this->transformers as $transformer) {
-            if ($transformer->shouldTransform($source)) {
-                $transformer->transform($source, $destination);
+            if ($transformer->shouldTransform($source, $matrix)) {
+                $transformer->transform($source, $destination, $matrix);
             }
         }
     }
