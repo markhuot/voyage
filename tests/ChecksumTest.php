@@ -44,3 +44,31 @@ it('does not process unchanged frames', function () {
     expect($newData[0])->checksum->toBe($initialData[0]['checksum']);
     expect($newData[0])->lastImport->toBe($initialData[0]['lastImport']);
 });
+
+it('creates new checksum when schema version is updated', function () {
+    $voyage = voyage();
+    $collection = $voyage->getCollections()[0];
+
+    // run once with default schema version
+    $voyage->start();
+
+    $initialData = $voyage->getAuditor()->fetchFrameData(['collection' => 'blog', 'sourceKey' => 0]);
+    expect($initialData[0])->checksum->not->toBeNull();
+
+    // update schema version and run again
+    $collection->setSchemaVersion(2);
+    $voyage->start();
+
+    $newData = $voyage->getAuditor()->fetchFrameData(['collection' => 'blog', 'sourceKey' => 0]);
+    expect($newData[0])->checksum->not->toBe($initialData[0]['checksum']);
+});
+
+it('changes checksum when schema version is changed in frame', function () {
+    $frame = new Frame(data: ['key' => 'value'], schemaVersion: 1);
+    $initialChecksum = $frame->getDerivedChecksum();
+
+    $frame->schemaVersion = 2;
+    $newChecksum = $frame->getDerivedChecksum();
+
+    expect($newChecksum)->not->toBe($initialChecksum);
+});

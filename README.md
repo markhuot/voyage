@@ -184,3 +184,20 @@ The core data object in Voyage is the `Frame`. Connections are responsible for
 1. generating immutable source frames
 2. generating mutable destination frames
 2. transforming source frame data in to destination frame data
+
+## Schema Versioning
+
+Voyage supports schema versioning for collections. Each collection has a `schemaVersion` attribute that can be set and retrieved using the `setSchemaVersion` and `getSchemaVersion` methods respectively. The schema version is included in the checksum calculation for frames, ensuring that changes in the schema invalidate old checksums and trigger reprocessing of frames.
+
+To set the schema version for a collection, use the `setSchemaVersion` method:
+
+```php
+$collection = new Collection(
+    name: 'Blog',
+    source: $source,
+    destination: $destination,
+);
+$collection->setSchemaVersion(2); // Set the schema version to 2
+```
+
+The schema version is automatically included in the checksum calculation for frames, so you don't need to do anything extra to ensure that changes in the schema trigger reprocessing of frames.

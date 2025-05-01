@@ -17,6 +17,7 @@ class Collection
         protected array $matrix = ['phase' => ['default']],
         protected ?string $handle = null,
         protected array $transformers = [],
+        protected int $schemaVersion = 1
     ) {
         $this->handle = $handle ?? $this->deriveHandle();
     }
@@ -152,5 +153,17 @@ class Collection
                 $transformer->transform($source, $destination, $matrix);
             }
         }
+    }
+
+    public function getSchemaVersion(): int
+    {
+        return $this->schemaVersion;
+    }
+
+    public function setSchemaVersion(int $schemaVersion): self
+    {
+        $this->schemaVersion = $schemaVersion;
+
+        return $this;
     }
 }
